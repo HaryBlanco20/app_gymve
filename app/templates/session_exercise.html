@@ -21,6 +21,7 @@
   {% else %}
   <p class="gv-ex-rec">Peso recomendado: <strong>el que te permita {{ item.default_reps }} repeticiones con buena técnica</strong></p>
   {% endif %}
+  {% if item.note %}<p class="gv-muted-sm"><i class="ti ti-note"></i> {{ item.note }}</p>{% endif %}
   {% if machine %}<p class="gv-muted-sm"><i class="ti ti-tool"></i> {{ machine }}</p>{% endif %}
 </section>
 

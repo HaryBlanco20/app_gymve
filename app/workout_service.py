@@ -21,7 +21,9 @@ from app.models import (
 )
 
 HEADER_FIELDS = ("title", "description", "focus", "day_number")
-ITEM_FIELDS = ("default_sets", "default_reps", "intensity_pct", "duration_min", "rest_seconds")
+ITEM_FIELDS = (
+    "default_sets", "default_reps", "intensity_pct", "duration_min", "rest_seconds", "note",
+)
 
 
 def _ordered(template: WorkoutTemplate) -> list[WorkoutTemplateExercise]:
@@ -189,6 +191,33 @@ def replace_template_items(
     )
     _copy_items(draft, template)
     db.flush()
+
+
+def create_template(
+    db: Session, owner_id: int, title: str, items: list[dict], focus: str = ""
+) -> WorkoutTemplate:
+    template = WorkoutTemplate(owner_user_id=owner_id, title=title, focus=focus, description="")
+    db.add(template)
+    replace_template_items(db, template, items, title)
+    return template
+
+
+def duplicate_template(db: Session, source: WorkoutTemplate, owner_id: int) -> WorkoutTemplate:
+    copy = clone_template(db, source, owner_id)
+    copy.title = f"{source.title} (copia)"[:160]
+    copy.day_number = None
+    return copy
+
+
+def accepted_copies_count(db: Session, source_id: int) -> int:
+    return (
+        db.query(SharedWorkout)
+        .filter(
+            SharedWorkout.source_template_id == source_id,
+            SharedWorkout.status == SharedWorkoutStatus.accepted,
+        )
+        .count()
+    )
 
 
 def soft_delete_template(db: Session, template: WorkoutTemplate) -> None:

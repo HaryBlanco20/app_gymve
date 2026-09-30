@@ -5,6 +5,7 @@
 <div class="gv-pagebar">
   <a href="/app/workouts" class="gym-icon-btn gv-back" aria-label="Volver a entrenamientos"><i class="ti ti-arrow-left"></i></a>
   <p class="gv-pagebar-title">Entrenamiento</p>
+  {% if not shared_from %}<a href="/app/workouts/{{ template.id }}/editar" class="gym-icon-btn" aria-label="Editar rutina"><i class="ti ti-pencil"></i></a>{% endif %}
   <button type="button" class="gym-icon-btn" data-open-dialog="share-dialog" aria-label="Compartir rutina"><i class="ti ti-share"></i></button>
 </div>
 
@@ -39,6 +40,7 @@
       <span class="gv-exercise-row-body">
         <span class="gv-exercise-name">{{ row.exercise.name }}</span>
         <span class="gv-exercise-rx">{{ row.prescription }}</span>
+        {% if row.note %}<span class="gv-exercise-rx gv-exercise-note">{{ row.note }}</span>{% endif %}
         {% if row.done %}<span class="gv-exercise-done">{{ row.done }}/{{ row.planned }} series hechas</span>{% endif %}
       </span>
       <i class="ti ti-chevron-right gv-chevron"></i>

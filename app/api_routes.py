@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -6,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.auth import authenticate_user
 from app.config import password_meets_policy
 from app.db import get_db
+from app.exercise_catalog import MUSCLE_GROUPS
 from app.models import (
     Exercise,
     Machine,
@@ -29,6 +31,8 @@ from app.schemas import (
     ShareWorkoutRequest,
     ShareWorkoutResponse,
     StartSessionResponse,
+    TemplateCreateRequest,
+    TemplateItemSpec,
     TemplateUpdateRequest,
     TemplateUpdateResponse,
     UserProfile,
@@ -52,6 +56,8 @@ from app.training_service import (
 )
 from app.workout_service import (
     accept_shared_workout,
+    create_template,
+    duplicate_template,
     is_shared_copy,
     replace_template_items,
     soft_delete_template,
@@ -228,6 +234,62 @@ def _editable_template_or_error(db: Session, user: User, template_id: int) -> Wo
     return template
 
 
+def _clean_title(raw: str | None) -> str | None:
+    if raw is None:
+        return None
+    title = " ".join(raw.split())
+    if not title:
+        raise HTTPException(status_code=400, detail="Ponle un nombre a la rutina.")
+    return title
+
+
+def _validated_specs(db: Session, items: list[TemplateItemSpec]) -> tuple[list[dict], str]:
+    """Normaliza los ejercicios y devuelve (specs, enfoque sugerido)."""
+    ids = [item.exercise_id for item in items]
+    if len(set(ids)) != len(ids):
+        raise HTTPException(status_code=400, detail="Hay ejercicios repetidos.")
+    exercises = {ex.id: ex for ex in db.query(Exercise).filter(Exercise.id.in_(ids))}
+    if len(exercises) != len(ids):
+        raise HTTPException(status_code=400, detail="Algún ejercicio no existe.")
+    specs: list[dict] = []
+    for item in items:
+        spec = item.model_dump()
+        spec["note"] = " ".join(spec["note"].split())
+        if is_cardio(exercises[item.exercise_id]):
+            if spec["duration_min"] is None:
+                name = exercises[item.exercise_id].name
+                raise HTTPException(status_code=400, detail=f"Indica los minutos de {name}.")
+            spec["intensity_pct"] = None
+            spec["default_sets"] = 1
+        else:
+            spec["duration_min"] = None
+        specs.append(spec)
+    groups = Counter(
+        ex.muscle_group for ex in exercises.values() if ex.muscle_group in MUSCLE_GROUPS
+    )
+    if len(groups) > 1:
+        groups.pop("cardio", None)
+    focus = MUSCLE_GROUPS[groups.most_common(1)[0][0]].lower() if groups else ""
+    return specs, focus
+
+
+@router.post("/workouts", response_model=TemplateUpdateResponse)
+def create_workout(
+    body: TemplateCreateRequest,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user_hybrid),
+) -> TemplateUpdateResponse:
+    specs, focus = _validated_specs(db, body.items)
+    template = create_template(db, current.id, _clean_title(body.title), specs, focus)
+    db.commit()
+    return TemplateUpdateResponse(
+        template_id=template.id,
+        exercise_count=len(specs),
+        synced_copies=0,
+        url=f"/app/workouts/{template.id}",
+    )
+
+
 @router.post("/workouts/{template_id}/items", response_model=TemplateUpdateResponse)
 def update_template_items(
     template_id: int,
@@ -236,17 +298,32 @@ def update_template_items(
     current: User = Depends(get_current_user_hybrid),
 ) -> TemplateUpdateResponse:
     template = _editable_template_or_error(db, current, template_id)
-    specs = [item.model_dump() for item in body.items]
-    ids = [spec["exercise_id"] for spec in specs]
-    if len(set(ids)) != len(ids):
-        raise HTTPException(status_code=400, detail="Hay ejercicios repetidos.")
-    if db.query(Exercise).filter(Exercise.id.in_(ids)).count() != len(ids):
-        raise HTTPException(status_code=400, detail="Algún ejercicio no existe.")
-    replace_template_items(db, template, specs, body.title)
+    specs, _ = _validated_specs(db, body.items)
+    replace_template_items(db, template, specs, _clean_title(body.title))
     db.commit()
     synced = sync_copies_of_source(db, template.id)
     return TemplateUpdateResponse(
-        template_id=template.id, exercise_count=len(specs), synced_copies=synced
+        template_id=template.id,
+        exercise_count=len(specs),
+        synced_copies=synced,
+        url=f"/app/workouts/{template.id}",
+    )
+
+
+@router.post("/workouts/{template_id}/duplicate", response_model=TemplateUpdateResponse)
+def duplicate_workout(
+    template_id: int,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user_hybrid),
+) -> TemplateUpdateResponse:
+    source = _editable_template_or_error(db, current, template_id)
+    copy = duplicate_template(db, source, current.id)
+    db.commit()
+    return TemplateUpdateResponse(
+        template_id=copy.id,
+        exercise_count=len(copy.items),
+        synced_copies=0,
+        url=f"/app/workouts/{copy.id}/editar",
     )
 
 
@@ -256,9 +333,7 @@ def delete_template(
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user_hybrid),
 ) -> dict[str, str]:
-    template = load_owned_template(db, current.id, template_id)
-    if not template:
-        raise HTTPException(status_code=404, detail="Rutina no encontrada.")
+    template = _editable_template_or_error(db, current, template_id)
     soft_delete_template(db, template)
     db.commit()
     return {"status": "ok", "url": "/app/workouts"}

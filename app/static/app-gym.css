@@ -1384,3 +1384,327 @@ p.gv-set-empty {
 .shared-frozen {
   color: #fac775;
 }
+
+/* ---------------------------------------------------------------- editor de rutinas */
+.gv-btn-sm {
+  padding: 7px 10px;
+  font-size: 12px;
+}
+
+.gv-title-row .gym-section-title {
+  margin-bottom: 0;
+}
+
+.gv-title-row + .workout-card-row,
+.gv-title-row + .gym-empty {
+  margin-top: 12px;
+}
+
+.workout-card-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.workout-card-row .workout-day-card {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.workout-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: auto;
+  font-size: 18px;
+  color: var(--gym-text);
+  text-decoration: none;
+}
+
+.editor .gym-field {
+  margin-bottom: 16px;
+}
+
+.editor-shared-note {
+  color: var(--gym-teal);
+  background: rgba(29, 158, 117, 0.08);
+  border-color: rgba(29, 158, 117, 0.25);
+}
+
+.editor-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.editor-item {
+  padding: 12px;
+  background: var(--gym-surface);
+  border: 0.5px solid var(--gym-border);
+  border-radius: 12px;
+}
+
+.editor-item-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.editor-item-n {
+  width: 20px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--gym-muted);
+  text-align: center;
+}
+
+.editor-thumb {
+  width: 52px;
+  height: 40px;
+}
+
+.editor-item-meta {
+  font-size: 11px;
+  color: var(--gym-muted);
+}
+
+.editor-item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.editor-item-actions .gym-icon-btn,
+.editor-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  color: var(--gym-text);
+}
+
+.editor-item-actions .gym-icon-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.editor-remove {
+  color: #f09595 !important;
+}
+
+.editor-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.editor-num {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.editor-num[hidden] {
+  display: none;
+}
+
+.editor-num span {
+  font-size: 11px;
+  color: var(--gym-muted);
+  white-space: nowrap;
+}
+
+.editor-num input,
+.editor-note input,
+.editor-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 8px;
+  border-radius: 8px;
+  border: 0.5px solid var(--gym-border);
+  background: var(--gym-surface-2);
+  color: var(--gym-text);
+  font-family: inherit;
+  font-size: 16px;
+}
+
+.editor-num input {
+  text-align: center;
+}
+
+.editor-note {
+  display: block;
+  margin-top: 8px;
+}
+
+.editor-note input {
+  padding: 9px 10px;
+  font-size: 14px;
+}
+
+.editor-num input:focus,
+.editor-note input:focus,
+.editor-search:focus {
+  outline: none;
+  border-color: var(--gym-teal);
+}
+
+.editor-add {
+  width: 100%;
+  justify-content: center;
+  padding: 12px;
+  border-style: dashed;
+  color: var(--gym-teal);
+}
+
+.editor-danger {
+  margin-top: 8px;
+}
+
+.gv-btn-danger-soft,
+.gv-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.gv-btn-danger-soft {
+  background: transparent;
+  color: #f09595;
+  border: 0.5px solid rgba(240, 149, 149, 0.35);
+}
+
+.gv-btn-danger-soft:hover {
+  background: rgba(240, 149, 149, 0.08);
+}
+
+.gv-btn-danger {
+  background: #a32d2d;
+  color: #fff;
+  border: none;
+  font-weight: 500;
+}
+
+.gv-btn-danger:hover {
+  background: #b83a3a;
+}
+
+.gv-btn-danger:disabled {
+  opacity: 0.6;
+}
+
+.gv-confirm .gv-dialog-card {
+  padding: 24px 22px 20px;
+}
+
+.gv-confirm-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 22px;
+}
+
+.gv-confirm-icon.is-danger {
+  background: rgba(240, 149, 149, 0.12);
+  color: #f09595;
+}
+
+.gv-confirm-text {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--gym-muted);
+}
+
+.editor-picker .gv-dialog-card {
+  max-height: 86dvh;
+}
+
+.editor-groups {
+  margin-bottom: 0;
+}
+
+.editor-groups .gv-tab {
+  flex: 0 0 auto;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.picker-list {
+  overflow-y: auto;
+  min-height: 120px;
+}
+
+.picker-row {
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.picker-row:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.picker-icon {
+  font-size: 18px;
+  color: var(--gym-teal);
+}
+
+.gv-btn-inline {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--gym-teal);
+  font-family: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.gv-exercise-note {
+  color: var(--gym-muted);
+}
+
+.gv-dialog.gv-confirm {
+  width: min(340px, 90vw);
+}
+
+
+.editor-num input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.editor-num input::-webkit-outer-spin-button,
+.editor-num input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.gv-btn-ghost:focus-visible,
+.gv-btn-danger:focus-visible,
+.gv-btn-danger-soft:focus-visible,
+.editor-item-actions .gym-icon-btn:focus-visible {
+  outline: 2px solid var(--gym-teal);
+  outline-offset: 2px;
+}

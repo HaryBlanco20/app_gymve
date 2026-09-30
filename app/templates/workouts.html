@@ -8,17 +8,23 @@
 </section>
 
 <section class="gym-section">
-  <h2 class="gym-section-title">Mis rutinas</h2>
+  <div class="gv-title-row">
+    <h2 class="gym-section-title">Mis rutinas</h2>
+    <a href="/app/workouts/nueva" class="gv-btn-ghost gv-btn-sm"><i class="ti ti-plus"></i> Nueva rutina</a>
+  </div>
   {% for tpl in templates %}
-  <a href="/app/workouts/{{ tpl.id }}" class="workout-day-card" data-template-id="{{ tpl.id }}">
-    {{ ring(tpl.progress, size="sm") }}
-    <div class="workout-day-body">
-      <p class="workout-day-focus">{% if tpl.day_number %}{{ tpl.day_number }}.º día de entrenamiento{% else %}{{ tpl.focus | capitalize }}{% endif %}</p>
-      <h3 class="workout-day-title">{{ tpl.title }}</h3>
-      <p class="workout-day-meta">{{ tpl.exercise_count }} ejercicios{% if tpl.hidden_count %} · {{ tpl.hidden_count }} ocultos por Mi gym{% endif %}</p>
-    </div>
-    <i class="ti ti-chevron-right workout-day-chevron"></i>
-  </a>
+  <div class="workout-card-row">
+    <a href="/app/workouts/{{ tpl.id }}" class="workout-day-card" data-template-id="{{ tpl.id }}">
+      {{ ring(tpl.progress, size="sm") }}
+      <div class="workout-day-body">
+        <p class="workout-day-focus">{% if tpl.day_number %}{{ tpl.day_number }}.º día de entrenamiento{% else %}{{ tpl.focus | capitalize }}{% endif %}</p>
+        <h3 class="workout-day-title">{{ tpl.title }}</h3>
+        <p class="workout-day-meta">{{ tpl.exercise_count }} ejercicios{% if tpl.hidden_count %} · {{ tpl.hidden_count }} ocultos por Mi gym{% endif %}</p>
+      </div>
+      <i class="ti ti-chevron-right workout-day-chevron"></i>
+    </a>
+    <a href="/app/workouts/{{ tpl.id }}/editar" class="gym-icon-btn workout-edit-btn" aria-label="Editar {{ tpl.title }}"><i class="ti ti-pencil"></i></a>
+  </div>
   {% else %}
   <div class="gym-empty">
     {% if shared_routines %}

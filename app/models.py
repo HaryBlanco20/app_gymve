@@ -150,6 +150,7 @@ class WorkoutTemplateExercise(Base):
     intensity_pct: Mapped[int | None] = mapped_column(Integer, nullable=True)
     duration_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
     rest_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=90)
+    note: Mapped[str] = mapped_column(String(200), nullable=False, default="")
 
     template: Mapped[WorkoutTemplate] = relationship("WorkoutTemplate", back_populates="items")
     exercise: Mapped[Exercise] = relationship("Exercise")

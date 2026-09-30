@@ -43,7 +43,12 @@ from app.training_service import (
     template_progress,
     visible_items,
 )
-from app.workout_service import received_shares, shared_clone_ids
+from app.workout_service import (
+    accepted_copies_count,
+    is_shared_copy,
+    received_shares,
+    shared_clone_ids,
+)
 
 
 @dataclass
@@ -306,6 +311,7 @@ def build_day_context(db: Session, user: User, template_id: int) -> dict | None:
                 "image": image_url(item.exercise),
                 "illustrated": has_illustration(item.exercise),
                 "prescription": prescription(item),
+                "note": item.note,
                 "done": done if not is_cardio(item.exercise) else None,
                 "planned": planned_units(item),
             }
@@ -330,6 +336,56 @@ def build_day_context(db: Session, user: User, template_id: int) -> dict | None:
             {"exercise": ex, "image": image_url(ex), "illustrated": has_illustration(ex)}
             for ex in retired_exercises(db, user.id, template)
         ],
+        "active_tab": "workouts",
+    }
+
+
+# ------------------------------------------------------------------ editor de rutinas
+def build_editor_context(db: Session, user: User, template_id: int | None) -> dict | None:
+    template = None
+    if template_id is not None:
+        template = load_owned_template(db, user.id, template_id)
+        if template is None or is_shared_copy(db, template.id):
+            return None
+    enabled = enabled_equipment(db, user.id)
+    catalog = [
+        {
+            "id": ex.id,
+            "name": ex.name,
+            "group": ex.muscle_group,
+            "group_label": MUSCLE_GROUPS.get(ex.muscle_group, ex.muscle_group),
+            "equipment": EQUIPMENT_LABELS.get(equipment_key(ex.equipment_type), ""),
+            "cardio": is_cardio(ex),
+            "enabled": equipment_key(ex.equipment_type) in enabled,
+            "image": image_url(ex),
+            "illustrated": has_illustration(ex),
+        }
+        for ex in db.query(Exercise).order_by(Exercise.name.asc()).all()
+    ]
+    items = [
+        {
+            "exercise_id": item.exercise_id,
+            "default_sets": item.default_sets,
+            "default_reps": item.default_reps,
+            "intensity_pct": item.intensity_pct,
+            "duration_min": item.duration_min,
+            "rest_seconds": item.rest_seconds,
+            "note": item.note or "",
+        }
+        for item in sorted(template.items, key=lambda i: i.sort_order)
+    ] if template else []
+    return {
+        "user": _user_ctx(user),
+        "template": template,
+        "copies": accepted_copies_count(db, template.id) if template else 0,
+        "editor_data": {
+            "templateId": template.id if template else None,
+            "title": template.title if template else "",
+            "items": items,
+            "catalog": catalog,
+            "groups": [{"key": k, "label": v} for k, v in MUSCLE_GROUPS.items()],
+        },
+        "back_url": f"/app/workouts/{template.id}" if template else "/app/workouts",
         "active_tab": "workouts",
     }
 

@@ -92,12 +92,13 @@ class SharedWorkoutListResponse(BaseModel):
 
 
 class TemplateItemSpec(BaseModel):
-    exercise_id: int
-    default_sets: int = Field(default=3, ge=1, le=20)
-    default_reps: int = Field(default=10, ge=1, le=100)
-    intensity_pct: int | None = Field(default=None, ge=1, le=100)
-    duration_min: int | None = Field(default=None, ge=1, le=240)
-    rest_seconds: int = Field(default=90, ge=0, le=900)
+    exercise_id: int = Field(strict=True, ge=1)
+    default_sets: int = Field(default=3, strict=True, ge=1, le=20)
+    default_reps: int = Field(default=10, strict=True, ge=1, le=100)
+    intensity_pct: int | None = Field(default=None, strict=True, ge=1, le=100)
+    duration_min: int | None = Field(default=None, strict=True, ge=1, le=240)
+    rest_seconds: int = Field(default=90, strict=True, ge=0, le=900)
+    note: str = Field(default="", max_length=200)
 
 
 class TemplateUpdateRequest(BaseModel):
@@ -106,10 +107,16 @@ class TemplateUpdateRequest(BaseModel):
     items: list[TemplateItemSpec] = Field(min_length=1, max_length=40)
 
 
+class TemplateCreateRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=160)
+    items: list[TemplateItemSpec] = Field(min_length=1, max_length=40)
+
+
 class TemplateUpdateResponse(BaseModel):
     template_id: int
     exercise_count: int
     synced_copies: int
+    url: str = ""
 
 
 class ShareWorkoutResponse(BaseModel):

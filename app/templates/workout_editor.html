@@ -1,0 +1,105 @@
+{% extends "app_base.html" %}
+{% block title %}{% if template %}Editar {{ template.title }}{% else %}Nueva rutina{% endif %} - GymVe{% endblock %}
+{% block content %}
+<div class="gv-pagebar">
+  <a href="{{ back_url }}" class="gym-icon-btn gv-back" aria-label="Volver"><i class="ti ti-arrow-left"></i></a>
+  <p class="gv-pagebar-title">{% if template %}Editar rutina{% else %}Nueva rutina{% endif %}</p>
+  {% if template %}
+  <button type="button" class="gym-icon-btn" id="editor-duplicate" aria-label="Duplicar rutina" title="Duplicar rutina"><i class="ti ti-copy"></i></button>
+  {% else %}
+  <span class="gv-pagebar-spacer"></span>
+  {% endif %}
+</div>
+
+<form id="routine-editor" class="editor" novalidate>
+  <label class="gym-field">
+    <span>Nombre de la rutina</span>
+    <input type="text" id="editor-title" maxlength="160" required placeholder="Ej. Día 6 · Pierna ligera" autocomplete="off" />
+  </label>
+
+  {% if copies %}
+  <p class="gv-note editor-shared-note"><i class="ti ti-users"></i> {{ copies }} persona{{ 's' if copies > 1 }} tiene{{ 'n' if copies > 1 }} esta rutina. Al guardar se actualiza su copia; sus registros no se tocan.</p>
+  {% endif %}
+
+  <section class="gym-section">
+    <h2 class="gym-section-title">Ejercicios <span id="editor-count"></span></h2>
+    <ol class="editor-list" id="editor-list"></ol>
+    <p class="gym-empty" id="editor-empty">Aún no hay ejercicios. Añádelos desde el catálogo.</p>
+    <button type="button" class="gv-btn-ghost editor-add" id="editor-add"><i class="ti ti-plus"></i> Añadir ejercicio</button>
+  </section>
+
+  {% if template %}
+  <section class="gym-section editor-danger">
+    <h2 class="gym-section-title">Zona de peligro</h2>
+    <button type="button" class="gv-btn-danger-soft" id="editor-delete"><i class="ti ti-trash"></i> Eliminar rutina</button>
+  </section>
+  {% endif %}
+
+  <div class="gv-sticky-cta">
+    <p class="share-feedback" id="editor-feedback" role="alert" hidden></p>
+    <button type="submit" class="gv-btn-cta" id="editor-save">GUARDAR RUTINA</button>
+  </div>
+</form>
+
+<template id="editor-item-tpl">
+  <li class="editor-item">
+    <div class="editor-item-head">
+      <span class="editor-item-n"></span>
+      <span class="gv-thumb editor-thumb"><img alt="" loading="lazy" /></span>
+      <span class="gv-exercise-row-body">
+        <span class="gv-exercise-name"></span>
+        <span class="editor-item-meta"></span>
+      </span>
+      <span class="editor-item-actions">
+        <button type="button" class="gym-icon-btn" data-act="up"><i class="ti ti-arrow-up"></i></button>
+        <button type="button" class="gym-icon-btn" data-act="down"><i class="ti ti-arrow-down"></i></button>
+        <button type="button" class="gym-icon-btn editor-remove" data-act="remove"><i class="ti ti-x"></i></button>
+      </span>
+    </div>
+    <div class="editor-fields">
+      <label class="editor-num" data-kind="strength"><span>Series</span><input type="number" inputmode="numeric" min="1" max="20" data-f="default_sets" /></label>
+      <label class="editor-num" data-kind="strength"><span>Reps</span><input type="number" inputmode="numeric" min="1" max="100" data-f="default_reps" /></label>
+      <label class="editor-num" data-kind="strength"><span>% peso máx.</span><input type="number" inputmode="numeric" min="1" max="100" data-f="intensity_pct" placeholder="-" /></label>
+      <label class="editor-num" data-kind="cardio"><span>Minutos</span><input type="number" inputmode="numeric" min="1" max="240" data-f="duration_min" /></label>
+      <label class="editor-num"><span>Descanso (s)</span><input type="number" inputmode="numeric" min="0" max="900" step="5" data-f="rest_seconds" /></label>
+    </div>
+    <label class="editor-note">
+      <span class="sr-only">Nota</span>
+      <input type="text" maxlength="200" data-f="note" placeholder="Nota (opcional): agarre, asiento, tempo…" />
+    </label>
+  </li>
+</template>
+
+<dialog class="gv-dialog editor-picker" id="picker-dialog" aria-labelledby="picker-title">
+  <div class="gv-dialog-card">
+    <div class="gv-title-row">
+      <h2 id="picker-title" class="gv-dialog-title">Añadir ejercicio</h2>
+      <button type="button" class="gym-icon-btn editor-close" data-close-dialog aria-label="Cerrar"><i class="ti ti-x"></i></button>
+    </div>
+    <input type="search" id="picker-search" class="editor-search" placeholder="Buscar ejercicio" aria-label="Buscar ejercicio" autocomplete="off" />
+    <div class="gv-tabs gv-tabs-scroll editor-groups" id="picker-groups" role="group" aria-label="Grupo muscular"></div>
+    <ul class="gv-exercise-list picker-list" id="picker-list"></ul>
+    <p class="gv-muted-sm" id="picker-hidden" hidden></p>
+    <div class="gv-dialog-actions">
+      <button type="button" class="gym-btn-primary" data-close-dialog>Listo</button>
+    </div>
+  </div>
+</dialog>
+
+{% if template %}
+<dialog class="gv-dialog gv-confirm" id="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-desc">
+  <div class="gv-dialog-card">
+    <span class="gv-confirm-icon is-danger"><i class="ti ti-alert-triangle"></i></span>
+    <h2 id="delete-title" class="gv-dialog-title">Eliminar rutina</h2>
+    <p id="delete-desc" class="gv-confirm-text">«{{ template.title }}» desaparece de tu lista. Tus registros se conservan{% if copies %} y quienes la recibieron conservan su copia{% endif %}.</p>
+    <div class="gv-dialog-actions">
+      <button type="button" class="gv-btn-ghost" id="delete-cancel" data-close-dialog autofocus>Cancelar</button>
+      <button type="button" class="gv-btn-danger" id="delete-confirm">Eliminar</button>
+    </div>
+  </div>
+</dialog>
+{% endif %}
+
+<script type="application/json" id="editor-data">{{ editor_data | tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="/static/app-editor.js?v=20260930a" defer></script>{% endblock %}

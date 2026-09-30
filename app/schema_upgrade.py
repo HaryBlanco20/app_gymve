@@ -39,6 +39,10 @@ ADD_COLUMNS = (
     "ALTER TABLE user_exercise_logs ADD COLUMN IF NOT EXISTS duration_min DOUBLE PRECISION",
     "ALTER TABLE workout_templates ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ",
     "ALTER TABLE shared_workouts ADD COLUMN IF NOT EXISTS source_updated_at TIMESTAMPTZ",
+    (
+        "ALTER TABLE workout_template_exercises ADD COLUMN IF NOT EXISTS note VARCHAR(200) "
+        "NOT NULL DEFAULT ''"
+    ),
 )
 
 

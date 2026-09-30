@@ -16,6 +16,7 @@ from app.app_views import (
     build_catalog_context,
     build_dashboard_context,
     build_day_context,
+    build_editor_context,
     build_exercise_info_context,
     build_gym_context,
     build_session_exercise_context,
@@ -173,6 +174,26 @@ def _safe_back(value: str | None, default: str) -> str:
     if value and value.startswith("/app/") and "//" not in value and "\\" not in value:
         return value
     return default
+
+
+@app.get("/app/workouts/nueva", response_class=HTMLResponse)
+async def app_workout_new(request: Request, db: Session = Depends(get_db)):
+    user = _require_user(request, db)
+    if not user:
+        return _login_redirect()
+    ctx = build_editor_context(db, user, None)
+    return templates.TemplateResponse(request, "workout_editor.html", ctx)
+
+
+@app.get("/app/workouts/{template_id}/editar", response_class=HTMLResponse)
+async def app_workout_edit(template_id: int, request: Request, db: Session = Depends(get_db)):
+    user = _require_user(request, db)
+    if not user:
+        return _login_redirect()
+    ctx = build_editor_context(db, user, template_id)
+    if ctx is None:
+        return RedirectResponse(url="/app/workouts", status_code=303)
+    return templates.TemplateResponse(request, "workout_editor.html", ctx)
 
 
 @app.get("/app/workouts/{template_id}", response_class=HTMLResponse)

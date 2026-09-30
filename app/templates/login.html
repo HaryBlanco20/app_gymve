@@ -4,10 +4,15 @@
 <header class="brand">
   <div class="brand-mark" aria-hidden="true">GV</div>
   <h1>GymVe</h1>
-  <p class="subtitle">Acceso familiar</p>
+  <p class="subtitle">Tu gimnasio en familia</p>
+  <ul class="tagline-pills" aria-label="Valores">
+    <li class="pill pill-purple">Familia</li>
+    <li class="pill pill-cyan">Energía</li>
+    <li class="pill pill-coral">Progreso</li>
+  </ul>
 </header>
 
-<main class="card">
+<main class="card card-login">
   {% if error %}
   <div class="alert alert-error" role="alert">{{ error }}</div>
   {% endif %}

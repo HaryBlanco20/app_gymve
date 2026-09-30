@@ -8,10 +8,13 @@ import httpx
 SPECIAL = set("!@#$%^&*()_+-=[]{}|;:',.<>?/`~\"\\")
 DEFAULT_API = os.getenv("GYMVE_API_BASE_URL", "http://10.0.2.2:8000").rstrip("/")
 
-ACCENT = "#2D4A3E"
-BG = "#F7F6F2"
-TEXT = "#1A1A18"
-MUTED = "#6B6B65"
+ACCENT = "#7C3AED"
+ACCENT_HOVER = "#6D28D9"
+BG = "#FAF8FF"
+TEXT = "#1A1625"
+MUTED = "#5C5470"
+PANEL_GRADIENT_START = "#EDE9FE"
+PANEL_GRADIENT_END = "#FFEDD5"
 
 
 def policy_ok(password: str) -> tuple[bool, str]:
@@ -66,9 +69,13 @@ def main(page: ft.Page) -> None:
                 ft.Text(profile.get("display_name", ""), size=22, weight=ft.FontWeight.W_500),
                 ft.Text(profile.get("email", ""), size=13, color=MUTED),
                 ft.Container(
-                    bgcolor="#EAF3DE",
-                    border=ft.border.all(0.5, "#C0DD97"),
-                    border_radius=8,
+                    gradient=ft.LinearGradient(
+                        begin=ft.alignment.top_left,
+                        end=ft.alignment.bottom_right,
+                        colors=[PANEL_GRADIENT_START, "#CFFAFE", PANEL_GRADIENT_END],
+                    ),
+                    border=ft.border.all(0.5, "#C4B5FD"),
+                    border_radius=10,
                     padding=14,
                     content=ft.Text(
                         "Sesión iniciada. Aquí irán rutinas y progreso de GymVe.",
@@ -136,11 +143,24 @@ def main(page: ft.Page) -> None:
     login_card.controls.extend(
         [
             ft.Row(
-                [ft.Container(width=48, height=48, bgcolor=ACCENT, border_radius=8)],
+                [
+                    ft.Container(
+                        width=56,
+                        height=56,
+                        border_radius=10,
+                        gradient=ft.LinearGradient(
+                            begin=ft.alignment.top_left,
+                            end=ft.alignment.bottom_right,
+                            colors=["#7C3AED", "#DB2777", "#F97316"],
+                        ),
+                        alignment=ft.alignment.center,
+                        content=ft.Text("GV", color=ft.Colors.WHITE, size=16, weight=ft.FontWeight.W_500),
+                    )
+                ],
                 alignment=ft.MainAxisAlignment.CENTER,
             ),
-            ft.Text("GymVe", size=24, weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER),
-            ft.Text("Acceso familiar", size=13, color=MUTED, text_align=ft.TextAlign.CENTER),
+            ft.Text("GymVe", size=26, weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER, color=ACCENT),
+            ft.Text("Tu gimnasio en familia", size=13, color=MUTED, text_align=ft.TextAlign.CENTER),
             api_field,
             email_field,
             password_field,
@@ -158,6 +178,11 @@ def main(page: ft.Page) -> None:
                         color=ft.Colors.WHITE,
                         on_click=submit_login,
                         expand=True,
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=10),
+                            elevation=4,
+                            overlay_color=ACCENT_HOVER,
+                        ),
                     ),
                     loading,
                 ],

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Genera iconos PWA simples (cuadrado verde GymVe). Requiere: pip install pillow."""
+"""Genera iconos PWA simples (gradiente violeta GymVe). Requiere: pip install pillow."""
 
 from pathlib import Path
 
@@ -9,11 +9,15 @@ except ImportError:
     raise SystemExit("Instala Pillow: pip install pillow")
 
 OUT = Path(__file__).resolve().parents[1] / "app" / "static"
-BG = (0x2D, 0x4A, 0x3E)
-
-
 def make(size: int) -> None:
-    img = Image.new("RGB", (size, size), BG)
+    img = Image.new("RGB", (size, size), (0x7C, 0x3A, 0xED))
+    draw_bg = ImageDraw.Draw(img)
+    for y in range(size):
+        t = y / max(size - 1, 1)
+        r = int(0x7C + (0xF9 - 0x7C) * t * 0.6)
+        g = int(0x3A + (0x73 - 0x3A) * t * 0.5)
+        b = int(0xED + (0x16 - 0xED) * t * 0.4)
+        draw_bg.line([(0, y), (size, y)], fill=(r, g, b))
     draw = ImageDraw.Draw(img)
     text = "GV"
     font_size = max(size // 3, 12)

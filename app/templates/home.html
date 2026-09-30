@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Inicio — GymVe{% endblock %}
 {% block content %}
-<header class="topbar">
+<header class="topbar home-topbar">
   <div class="brand-inline">
     <div class="brand-mark sm" aria-hidden="true">GV</div>
     <span>GymVe</span>
@@ -12,6 +12,12 @@
   <p class="welcome-label">Bienvenido/a</p>
   <h1 class="welcome-name">{{ user.display_name }}</h1>
   <p class="welcome-email">{{ user.email }}</p>
+
+  <div class="home-chips" aria-hidden="true">
+    <span class="chip"><strong>Rutinas</strong> pronto</span>
+    <span class="chip"><strong>Progreso</strong> pronto</span>
+    <span class="chip"><strong>Retos</strong> pronto</span>
+  </div>
 
   <section class="home-panel">
     <h2>Tu espacio</h2>

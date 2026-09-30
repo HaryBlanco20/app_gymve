@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.api_routes import router as api_router
+from app.app_views import build_dashboard_context, build_workouts_context
 from app.auth import authenticate_user
 from app.config import (
     get_app_host,
@@ -72,17 +73,24 @@ def _session_user(request: Request, db: Session) -> dict | None:
     return {"email": user.email, "display_name": user.display_name}
 
 
+def _require_user(request: Request, db: Session) -> User | None:
+    email = request.session.get("email")
+    if not email:
+        return None
+    return db.query(User).filter(User.email == normalize_email(email)).one_or_none()
+
+
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request, db: Session = Depends(get_db)):
     if _session_user(request, db):
-        return RedirectResponse(url="/inicio", status_code=303)
+        return RedirectResponse(url="/app/dashboard", status_code=303)
     return RedirectResponse(url="/login", status_code=303)
 
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request, db: Session = Depends(get_db)):
     if _session_user(request, db):
-        return RedirectResponse(url="/inicio", status_code=303)
+        return RedirectResponse(url="/app/dashboard", status_code=303)
     return templates.TemplateResponse(
         request,
         "login.html",
@@ -119,15 +127,32 @@ async def login_submit(
             status_code=401,
         )
     request.session["email"] = user.email
-    return RedirectResponse(url="/inicio", status_code=303)
+    return RedirectResponse(url="/app/dashboard", status_code=303)
 
 
 @app.get("/inicio", response_class=HTMLResponse)
 async def home(request: Request, db: Session = Depends(get_db)):
-    user = _session_user(request, db)
+    if not _session_user(request, db):
+        return RedirectResponse(url="/login", status_code=303)
+    return RedirectResponse(url="/app/dashboard", status_code=303)
+
+
+@app.get("/app/dashboard", response_class=HTMLResponse)
+async def app_dashboard(request: Request, db: Session = Depends(get_db)):
+    user = _require_user(request, db)
     if not user:
         return RedirectResponse(url="/login", status_code=303)
-    return templates.TemplateResponse(request, "home.html", {"user": user})
+    ctx = build_dashboard_context(db, user)
+    return templates.TemplateResponse(request, "dashboard.html", ctx)
+
+
+@app.get("/app/workouts", response_class=HTMLResponse)
+async def app_workouts(request: Request, db: Session = Depends(get_db)):
+    user = _require_user(request, db)
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+    ctx = build_workouts_context(db, user)
+    return templates.TemplateResponse(request, "workouts.html", ctx)
 
 
 @app.post("/logout")

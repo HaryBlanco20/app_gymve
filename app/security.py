@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -60,3 +60,25 @@ def get_current_api_user(
             detail="Usuario no encontrado.",
         )
     return user
+
+
+def get_current_user_hybrid(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    session_email = request.session.get("email")
+    if session_email:
+        user = get_user_by_email(db, str(session_email))
+        if user:
+            return user
+    if credentials and credentials.scheme.lower() == "bearer":
+        email = decode_access_token(credentials.credentials)
+        if email:
+            user = get_user_by_email(db, email)
+            if user:
+                return user
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="No autenticado.",
+    )

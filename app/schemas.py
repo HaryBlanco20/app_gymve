@@ -1,3 +1,6 @@
+from datetime import datetime
+from enum import Enum
+
 from pydantic import BaseModel, Field
 
 
@@ -16,3 +19,47 @@ class LoginResponse(BaseModel):
 class UserProfile(BaseModel):
     email: str
     display_name: str
+
+
+class EquipmentTypeSchema(str, Enum):
+    nautilus_machine = "nautilus_machine"
+    dumbbell = "dumbbell"
+
+
+class SharedStatusSchema(str, Enum):
+    pending = "pending"
+    accepted = "accepted"
+    declined = "declined"
+
+
+class ShareWorkoutRequest(BaseModel):
+    template_id: int = Field(ge=1)
+    to_user_id: int | None = Field(default=None, ge=1)
+    to_email: str | None = Field(default=None, min_length=3, max_length=320)
+    message: str = Field(default="", max_length=500)
+
+
+class SharedWorkoutItem(BaseModel):
+    id: int
+    status: SharedStatusSchema
+    message: str
+    created_at: datetime
+    accepted_at: datetime | None
+    from_user_id: int
+    from_display_name: str
+    to_user_id: int
+    source_template_id: int
+    source_template_title: str
+    cloned_template_id: int | None
+    direction: str
+
+
+class SharedWorkoutListResponse(BaseModel):
+    items: list[SharedWorkoutItem]
+
+
+class ShareWorkoutResponse(BaseModel):
+    id: int
+    status: SharedStatusSchema
+    to_user_id: int
+    source_template_id: int

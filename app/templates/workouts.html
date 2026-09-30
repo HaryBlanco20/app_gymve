@@ -1,0 +1,153 @@
+{% extends "app_base.html" %}
+{% block title %}Entrenamientos — GymVe{% endblock %}
+{% block content %}
+<section class="gym-greeting">
+  <h1 class="gym-page-title">Entrenamientos</h1>
+  <p class="gym-lead">Comparte la estructura; cada quien registra sus pesos y repeticiones.</p>
+</section>
+
+<section class="gym-section">
+  <h2 class="gym-section-title">Mis rutinas</h2>
+  {% for tpl in templates %}
+  <article class="workout-day-card" data-template-id="{{ tpl.id }}">
+    <div class="workout-day-ring" style="--day-progress: 0;">
+      <svg viewBox="0 0 36 36" aria-hidden="true">
+        <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        <path class="ring-fill" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+      </svg>
+    </div>
+    <div class="workout-day-body">
+      <p class="workout-day-focus">{{ tpl.focus | capitalize }}</p>
+      <h3 class="workout-day-title">{{ tpl.title }}</h3>
+      <p class="workout-day-meta">{{ tpl.exercise_count }} ejercicios</p>
+      <ul class="exercise-preview">
+        {% for name in tpl.exercise_names[:4] %}
+        <li>{{ name }}</li>
+        {% endfor %}
+        {% if tpl.exercise_count > 4 %}
+        <li>+ {{ tpl.exercise_count - 4 }} más</li>
+        {% endif %}
+      </ul>
+    </div>
+  </article>
+  {% else %}
+  <div class="gym-empty">
+    <p>No hay plantillas. Corre <code>python scripts/seed_workouts.py</code> tras el seed de usuarios.</p>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="gym-section" id="compartidos">
+  <h2 class="gym-section-title">Compartidos</h2>
+  {% if family_users %}
+  <form class="share-form" id="share-form">
+    <label class="gym-field">
+      <span>Compartir rutina con familia</span>
+      <select name="template_id" required>
+        {% for tpl in templates %}
+        <option value="{{ tpl.id }}">{{ tpl.title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="gym-field">
+      <span>Miembro</span>
+      <select name="to_user_id" required>
+        {% for fu in family_users %}
+        <option value="{{ fu.id }}">{{ fu.display_name }} ({{ fu.email }})</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="gym-field">
+      <span>Mensaje (opcional)</span>
+      <input type="text" name="message" maxlength="500" placeholder="¡Nos vemos en piernas!" />
+    </label>
+    <button type="submit" class="gym-btn-primary">Compartir rutina</button>
+    <p class="share-feedback" id="share-feedback" hidden></p>
+  </form>
+  {% endif %}
+
+  <div class="shared-list">
+    {% for item in shared_items %}
+    <div class="shared-card" data-shared-id="{{ item.id }}" data-status="{{ item.status }}">
+      <div class="shared-card-head">
+        <span class="badge badge-{{ item.status }}">{{ item.status_label }}</span>
+        <span class="shared-dir">{{ item.direction_label }}</span>
+      </div>
+      <h3>{{ item.template_title }}</h3>
+      <p class="shared-meta">De {{ item.from_name }} → {{ item.to_name }}</p>
+      {% if item.message %}
+      <p class="shared-msg">{{ item.message }}</p>
+      {% endif %}
+      {% if item.can_accept %}
+      <button type="button" class="gym-btn-primary accept-share-btn" data-id="{{ item.id }}">
+        Aceptar rutina
+      </button>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="gym-empty">
+      <p>Sin invitaciones aún. Comparte tu día de piernas con tu familia.</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const feedback = document.getElementById("share-feedback");
+  const form = document.getElementById("share-form");
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const body = {
+        template_id: Number(fd.get("template_id")),
+        to_user_id: Number(fd.get("to_user_id")),
+        message: String(fd.get("message") || ""),
+      };
+      feedback.hidden = false;
+      feedback.textContent = "Enviando…";
+      feedback.className = "share-feedback";
+      try {
+        const res = await fetch("/api/v1/workouts/share", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          feedback.textContent = data.detail || "No se pudo compartir.";
+          feedback.classList.add("error");
+          return;
+        }
+        feedback.textContent = "Rutina compartida. La otra persona puede aceptarla abajo.";
+        feedback.classList.add("ok");
+        setTimeout(() => window.location.reload(), 800);
+      } catch {
+        feedback.textContent = "Error de red.";
+        feedback.classList.add("error");
+      }
+    });
+  }
+  document.querySelectorAll(".accept-share-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-id");
+      btn.disabled = true;
+      try {
+        const res = await fetch(`/api/v1/workouts/shared/${id}/accept`, {
+          method: "POST",
+          credentials: "include",
+        });
+        if (res.ok) window.location.reload();
+        else btn.disabled = false;
+      } catch {
+        btn.disabled = false;
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

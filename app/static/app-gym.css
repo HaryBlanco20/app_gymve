@@ -1,0 +1,464 @@
+/* GymVe app — tema oscuro (inspiración UX móvil, implementación original) */
+
+body.gym-app {
+  --gym-bg: #0a0e0d;
+  --gym-surface: #141a18;
+  --gym-surface-2: #1c2421;
+  --gym-border: rgba(255, 255, 255, 0.08);
+  --gym-text: #f2f5f4;
+  --gym-muted: #8a9692;
+  --gym-teal: #1d9e75;
+  --gym-teal-dim: #0f6e56;
+  --gym-teal-glow: rgba(29, 158, 117, 0.35);
+  color: var(--gym-text);
+  background: var(--gym-bg);
+}
+
+body.gym-app .gym-shell {
+  min-height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+.gym-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 8px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: linear-gradient(180deg, var(--gym-bg) 70%, transparent);
+}
+
+.gym-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gym-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--gym-teal-dim);
+  color: #e1f5ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.gym-brand-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.gym-brand-sub {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--gym-muted);
+}
+
+.gym-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 0.5px solid var(--gym-border);
+  background: var(--gym-surface);
+  color: var(--gym-muted);
+  cursor: pointer;
+}
+
+.gym-main {
+  flex: 1;
+  padding: 8px 20px 24px;
+}
+
+.gym-greeting {
+  margin-bottom: 20px;
+}
+
+.gym-kicker {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--gym-muted);
+}
+
+.gym-page-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.gym-lead {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--gym-muted);
+}
+
+.gym-section {
+  margin-bottom: 28px;
+}
+
+.gym-section-title {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gym-muted);
+}
+
+.gym-ring-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 28px;
+  padding: 16px;
+  background: var(--gym-surface);
+  border: 0.5px solid var(--gym-border);
+  border-radius: 12px;
+}
+
+.progress-ring {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+}
+
+.progress-ring svg,
+.workout-day-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ring-bg {
+  fill: none;
+  stroke: var(--gym-surface-2);
+  stroke-width: 3;
+}
+
+.ring-fill {
+  fill: none;
+  stroke: var(--gym-teal);
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px var(--gym-teal-glow));
+}
+
+.ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring-value {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.ring-caption {
+  font-size: 11px;
+  color: var(--gym-muted);
+}
+
+.gym-stats-mini {
+  display: flex;
+  gap: 24px;
+}
+
+.stat-value {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.stat-label {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--gym-muted);
+}
+
+.workout-day-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: var(--gym-surface);
+  border: 0.5px solid var(--gym-border);
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.workout-day-card.featured {
+  border-color: rgba(29, 158, 117, 0.45);
+  background: linear-gradient(135deg, #141a18 0%, #152822 100%);
+}
+
+.workout-day-ring {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.day-ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.workout-day-focus {
+  margin: 0 0 2px;
+  font-size: 11px;
+  color: var(--gym-teal);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.workout-day-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.workout-day-meta {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--gym-muted);
+}
+
+.workout-day-chevron {
+  margin-left: auto;
+  color: var(--gym-muted);
+  font-size: 18px;
+}
+
+.equipment-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  background: var(--gym-surface-2);
+  border: 0.5px solid var(--gym-border);
+}
+
+.gym-empty {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--gym-surface);
+  border: 0.5px dashed var(--gym-border);
+  font-size: 13px;
+  color: var(--gym-muted);
+}
+
+.gym-empty code {
+  font-size: 11px;
+  color: var(--gym-text);
+}
+
+.exercise-preview {
+  margin: 8px 0 0;
+  padding-left: 16px;
+  font-size: 12px;
+  color: var(--gym-muted);
+  line-height: 1.45;
+}
+
+.gym-bottom-nav {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  background: rgba(10, 14, 13, 0.92);
+  border-top: 0.5px solid var(--gym-border);
+  backdrop-filter: blur(8px);
+}
+
+.gym-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--gym-muted);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.gym-nav-item i {
+  font-size: 20px;
+}
+
+.gym-nav-item.active {
+  color: var(--gym-teal);
+  background: rgba(29, 158, 117, 0.12);
+}
+
+.share-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--gym-surface);
+  border: 0.5px solid var(--gym-border);
+  border-radius: 12px;
+}
+
+.gym-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gym-field span {
+  font-size: 12px;
+  color: var(--gym-muted);
+}
+
+.gym-field input,
+.gym-field select {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 0.5px solid var(--gym-border);
+  background: var(--gym-surface-2);
+  color: var(--gym-text);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.gym-btn-primary {
+  padding: 11px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--gym-teal-dim);
+  color: #e1f5ee;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.gym-btn-primary:hover {
+  background: var(--gym-teal);
+}
+
+.gym-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.share-feedback {
+  font-size: 12px;
+  margin: 0;
+}
+
+.share-feedback.ok {
+  color: var(--gym-teal);
+}
+
+.share-feedback.error {
+  color: #f09595;
+}
+
+.shared-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shared-card {
+  padding: 14px;
+  background: var(--gym-surface);
+  border: 0.5px solid var(--gym-border);
+  border-radius: 12px;
+}
+
+.shared-card h3 {
+  margin: 8px 0 4px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.shared-meta,
+.shared-msg {
+  margin: 0;
+  font-size: 12px;
+  color: var(--gym-muted);
+}
+
+.shared-msg {
+  margin-top: 6px;
+}
+
+.shared-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.badge {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  text-transform: capitalize;
+}
+
+.badge-pending {
+  background: rgba(250, 199, 117, 0.15);
+  color: #fac775;
+}
+
+.badge-accepted {
+  background: rgba(29, 158, 117, 0.15);
+  color: var(--gym-teal);
+}
+
+.badge-declined {
+  background: rgba(240, 149, 149, 0.12);
+  color: #f09595;
+}
+
+.shared-dir {
+  font-size: 11px;
+  color: var(--gym-muted);
+}
+
+.shared-card .gym-btn-primary {
+  margin-top: 12px;
+  width: 100%;
+}

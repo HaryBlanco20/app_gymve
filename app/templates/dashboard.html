@@ -1,0 +1,64 @@
+{% extends "app_base.html" %}
+{% block title %}Inicio — GymVe{% endblock %}
+{% block content %}
+<section class="gym-greeting">
+  <p class="gym-kicker">Hola, {{ user.display_name }}</p>
+  <h1 class="gym-page-title">Tu semana de entrenamiento</h1>
+</section>
+
+<section class="gym-ring-row">
+  <div class="progress-ring" style="--progress: {{ week_progress }};">
+    <svg viewBox="0 0 36 36" aria-hidden="true">
+      <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+      <path class="ring-fill" stroke-dasharray="{{ week_progress }}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+    </svg>
+    <div class="ring-label">
+      <span class="ring-value">{{ week_progress }}%</span>
+      <span class="ring-caption">Esta semana</span>
+    </div>
+  </div>
+  <div class="gym-stats-mini">
+    <div>
+      <p class="stat-value">{{ templates_count }}</p>
+      <p class="stat-label">Rutinas</p>
+    </div>
+    <div>
+      <p class="stat-value">{{ pending_shares }}</p>
+      <p class="stat-label">Por aceptar</p>
+    </div>
+  </div>
+</section>
+
+<section class="gym-section">
+  <h2 class="gym-section-title">Próximo entrenamiento</h2>
+  {% if featured_template %}
+  <a href="/app/workouts" class="workout-day-card featured">
+    <div class="workout-day-ring" style="--day-progress: {{ day_progress }};">
+      <svg viewBox="0 0 36 36" aria-hidden="true">
+        <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        <path class="ring-fill" stroke-dasharray="{{ day_progress }}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+      </svg>
+      <span class="day-ring-text">{{ day_progress }}%</span>
+    </div>
+    <div class="workout-day-body">
+      <p class="workout-day-focus">{{ featured_template.focus | capitalize }}</p>
+      <h3 class="workout-day-title">{{ featured_template.title }}</h3>
+      <p class="workout-day-meta">{{ featured_template.exercise_count }} ejercicios · Nautilus + mancuernas</p>
+    </div>
+    <i class="ti ti-chevron-right workout-day-chevron"></i>
+  </a>
+  {% else %}
+  <div class="gym-empty">
+    <p>Aún no tienes rutinas. Ejecuta el seed o crea una desde Entrenamientos.</p>
+  </div>
+  {% endif %}
+</section>
+
+<section class="gym-section">
+  <h2 class="gym-section-title">Equipo configurado</h2>
+  <div class="equipment-chips">
+    <span class="chip"><i class="ti ti-device-desktop"></i> Máquinas Nautilus</span>
+    <span class="chip"><i class="ti ti-barbell"></i> Mancuernas</span>
+  </div>
+</section>
+{% endblock %}

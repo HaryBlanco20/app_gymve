@@ -91,6 +91,27 @@ class SharedWorkoutListResponse(BaseModel):
     items: list[SharedWorkoutItem]
 
 
+class TemplateItemSpec(BaseModel):
+    exercise_id: int
+    default_sets: int = Field(default=3, ge=1, le=20)
+    default_reps: int = Field(default=10, ge=1, le=100)
+    intensity_pct: int | None = Field(default=None, ge=1, le=100)
+    duration_min: int | None = Field(default=None, ge=1, le=240)
+    rest_seconds: int = Field(default=90, ge=0, le=900)
+
+
+class TemplateUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=160)
+    # El orden de la lista es el orden de la rutina.
+    items: list[TemplateItemSpec] = Field(min_length=1, max_length=40)
+
+
+class TemplateUpdateResponse(BaseModel):
+    template_id: int
+    exercise_count: int
+    synced_copies: int
+
+
 class ShareWorkoutResponse(BaseModel):
     id: int
     status: SharedStatusSchema

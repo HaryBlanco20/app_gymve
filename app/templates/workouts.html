@@ -55,6 +55,8 @@
       <p class="workout-day-focus"><i class="ti ti-users"></i> Compartida por {{ sr.from_name }}</p>
       <h3 class="workout-day-title">{{ sr.title }}</h3>
       <p class="workout-day-meta">{{ sr.exercise_count }} ejercicios{% if sr.hidden_count %} · {{ sr.hidden_count }} ocultos por Mi gym{% endif %}{% if sr.showing_all %} · Mi gym no tiene este equipo, se muestran todos{% endif %}</p>
+      {% if sr.updated_note %}<p class="workout-day-meta shared-updated"><i class="ti ti-refresh"></i> {{ sr.updated_note }}</p>{% endif %}
+      {% if sr.frozen_note %}<p class="workout-day-meta shared-frozen"><i class="ti ti-lock"></i> {{ sr.frozen_note }}</p>{% endif %}
     </div>
     <i class="ti ti-chevron-right workout-day-chevron"></i>
   </a>

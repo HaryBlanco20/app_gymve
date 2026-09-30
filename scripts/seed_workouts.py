@@ -30,6 +30,7 @@ from app.models import (
     WorkoutTemplateExercise,
 )
 from app.schema_upgrade import upgrade_schema
+from app.workout_service import sync_copies_of_source
 
 EK_DIR = ROOT / "app" / "static" / "exercises" / "everkinetic"
 
@@ -154,6 +155,15 @@ def main() -> None:
             return
         ensure_plan(db, owner, exercises)
         db.commit()
+        owner_ids = [
+            row[0]
+            for row in db.query(WorkoutTemplate.id).filter(
+                WorkoutTemplate.owner_user_id == owner.id
+            )
+        ]
+        synced = sum(sync_copies_of_source(db, tpl_id) for tpl_id in owner_ids)
+        if synced:
+            print(f"Copias compartidas actualizadas: {synced}")
         with_image = sum(1 for ex in exercises.values() if ex.image_path)
         print(
             f"Máquinas: {db.query(Machine).count()} | "

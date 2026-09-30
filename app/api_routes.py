@@ -7,6 +7,7 @@ from app.auth import authenticate_user
 from app.config import password_meets_policy
 from app.db import get_db
 from app.models import (
+    Exercise,
     Machine,
     SharedWorkout,
     SharedWorkoutStatus,
@@ -28,6 +29,8 @@ from app.schemas import (
     ShareWorkoutRequest,
     ShareWorkoutResponse,
     StartSessionResponse,
+    TemplateUpdateRequest,
+    TemplateUpdateResponse,
     UserProfile,
 )
 from app.security import (
@@ -47,7 +50,14 @@ from app.training_service import (
     shared_for_clone,
     start_or_resume_session,
 )
-from app.workout_service import accept_shared_workout, user_owns_template
+from app.workout_service import (
+    accept_shared_workout,
+    is_shared_copy,
+    replace_template_items,
+    soft_delete_template,
+    sync_copies_of_source,
+    user_owns_template,
+)
 
 router = APIRouter(prefix="/api/v1", tags=["api"])
 
@@ -192,6 +202,8 @@ def accept_share(
         raise HTTPException(status_code=404, detail="Invitación no encontrada.")
     if shared.status != SharedWorkoutStatus.pending:
         raise HTTPException(status_code=400, detail="Esta invitación ya fue procesada.")
+    if shared.source_template is None or shared.source_template.deleted_at:
+        raise HTTPException(status_code=400, detail="La rutina original fue eliminada.")
     accept_shared_workout(db, shared)
     db.commit()
     db.refresh(shared)
@@ -202,6 +214,54 @@ def accept_share(
         source_template_id=shared.source_template_id,
         cloned_template_id=shared.cloned_template_id,
     )
+
+
+def _editable_template_or_error(db: Session, user: User, template_id: int) -> WorkoutTemplate:
+    template = load_owned_template(db, user.id, template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Rutina no encontrada.")
+    if is_shared_copy(db, template.id):
+        raise HTTPException(
+            status_code=400,
+            detail="Las rutinas compartidas las edita quien las compartió.",
+        )
+    return template
+
+
+@router.post("/workouts/{template_id}/items", response_model=TemplateUpdateResponse)
+def update_template_items(
+    template_id: int,
+    body: TemplateUpdateRequest,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user_hybrid),
+) -> TemplateUpdateResponse:
+    template = _editable_template_or_error(db, current, template_id)
+    specs = [item.model_dump() for item in body.items]
+    ids = [spec["exercise_id"] for spec in specs]
+    if len(set(ids)) != len(ids):
+        raise HTTPException(status_code=400, detail="Hay ejercicios repetidos.")
+    if db.query(Exercise).filter(Exercise.id.in_(ids)).count() != len(ids):
+        raise HTTPException(status_code=400, detail="Algún ejercicio no existe.")
+    replace_template_items(db, template, specs, body.title)
+    db.commit()
+    synced = sync_copies_of_source(db, template.id)
+    return TemplateUpdateResponse(
+        template_id=template.id, exercise_count=len(specs), synced_copies=synced
+    )
+
+
+@router.post("/workouts/{template_id}/delete")
+def delete_template(
+    template_id: int,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user_hybrid),
+) -> dict[str, str]:
+    template = load_owned_template(db, current.id, template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Rutina no encontrada.")
+    soft_delete_template(db, template)
+    db.commit()
+    return {"status": "ok", "url": "/app/workouts"}
 
 
 @router.post("/workouts/{template_id}/start", response_model=StartSessionResponse)

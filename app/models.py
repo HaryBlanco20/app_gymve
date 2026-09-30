@@ -119,6 +119,8 @@ class WorkoutTemplate(Base):
         nullable=False,
         default=lambda: datetime.now(UTC),
     )
+    # Borrado lógico: las sesiones y registros siguen apuntando a la plantilla.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     owner: Mapped[User] = relationship("User")
     items: Mapped[list["WorkoutTemplateExercise"]] = relationship(
@@ -181,6 +183,10 @@ class SharedWorkout(Base):
         default=lambda: datetime.now(UTC),
     )
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Última vez que la copia de la receptora cambió porque la dueña editó la original.
+    source_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     source_template: Mapped[WorkoutTemplate] = relationship(
         "WorkoutTemplate",

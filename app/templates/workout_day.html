@@ -17,8 +17,13 @@
     </p>
     <h1 class="gv-day-title">{{ template.title }}</h1>
     {% if shared_from %}<p class="gv-muted-sm"><i class="ti ti-users"></i> Compartida por {{ shared_from }} · tus registros son solo tuyos</p>{% endif %}
+    {% if updated_note %}<p class="gv-muted-sm shared-updated"><i class="ti ti-refresh"></i> {{ updated_note }}</p>{% endif %}
   </div>
 </section>
+
+{% if frozen_note %}
+<p class="gv-note"><i class="ti ti-lock"></i> {{ frozen_note }}</p>
+{% endif %}
 
 {% if showing_all %}
 <p class="gv-note"><i class="ti ti-filter"></i> Tu equipo en <a href="/app/gym">Mi gym</a> no incluye el de esta rutina compartida; se muestran todos sus ejercicios.</p>
@@ -43,6 +48,27 @@
   <li class="gym-empty">Ningún ejercicio coincide con tu equipo. Activa más tipos en <a href="/app/gym">Mi gym</a>.</li>
   {% endfor %}
 </ul>
+
+{% if retired %}
+<section class="gym-section">
+  <h2 class="gym-section-title">Ya no están en la rutina</h2>
+  <p class="gv-muted-sm gv-mb">Tus registros se conservan; toca un ejercicio para ver su historial.</p>
+  <ul class="gv-exercise-list">
+    {% for r in retired %}
+    <li>
+      <a class="gv-exercise-row" href="/app/exercises/{{ r.exercise.id }}?tab=historial&back=/app/workouts/{{ template.id }}">
+        {{ thumb(r.image, r.illustrated, r.exercise.name) }}
+        <span class="gv-exercise-row-body">
+          <span class="gv-exercise-name">{{ r.exercise.name }}</span>
+          <span class="gv-exercise-rx">Historial</span>
+        </span>
+        <i class="ti ti-chevron-right gv-chevron"></i>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
 
 {% if rows %}
 <div class="gv-sticky-cta">

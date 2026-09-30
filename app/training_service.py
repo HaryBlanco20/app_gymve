@@ -22,6 +22,7 @@ from app.models import (
     WorkoutTemplate,
     WorkoutTemplateExercise,
 )
+from app.workout_service import sync_copy_of_template
 
 # Colombia no usa horario de verano.
 BOGOTA_TZ = timezone(timedelta(hours=-5), "America/Bogota")
@@ -83,6 +84,7 @@ def set_enabled_equipment(db: Session, user_id: int, enabled: set[str]) -> None:
 
 # ------------------------------------------------------------------ plantillas
 def load_owned_template(db: Session, user_id: int, template_id: int) -> WorkoutTemplate | None:
+    sync_copy_of_template(db, template_id)
     return (
         db.query(WorkoutTemplate)
         .options(
@@ -90,9 +92,27 @@ def load_owned_template(db: Session, user_id: int, template_id: int) -> WorkoutT
             .joinedload(WorkoutTemplateExercise.exercise)
             .joinedload(Exercise.machine)
         )
-        .filter(WorkoutTemplate.id == template_id, WorkoutTemplate.owner_user_id == user_id)
+        .filter(
+            WorkoutTemplate.id == template_id,
+            WorkoutTemplate.owner_user_id == user_id,
+            WorkoutTemplate.deleted_at.is_(None),
+        )
         .one_or_none()
     )
+
+
+def retired_exercises(db: Session, user_id: int, template: WorkoutTemplate) -> list[Exercise]:
+    """Ejercicios que la usuaria registró en esta rutina y ya no forman parte de ella."""
+    current = {item.exercise_id for item in template.items}
+    rows = (
+        db.query(Exercise)
+        .join(UserExerciseLog, UserExerciseLog.exercise_id == Exercise.id)
+        .join(WorkoutSession, WorkoutSession.id == UserExerciseLog.session_id)
+        .filter(WorkoutSession.template_id == template.id, UserExerciseLog.user_id == user_id)
+        .distinct()
+        .all()
+    )
+    return sorted((ex for ex in rows if ex.id not in current), key=lambda ex: ex.name)
 
 
 def visible_items(

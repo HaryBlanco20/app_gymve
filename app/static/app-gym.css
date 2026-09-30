@@ -1376,3 +1376,11 @@ p.gv-set-empty {
   margin-top: 10px;
   font-size: 12px;
 }
+
+.shared-updated {
+  color: var(--gym-teal);
+}
+
+.shared-frozen {
+  color: #fac775;
+}

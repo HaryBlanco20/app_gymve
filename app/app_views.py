@@ -23,6 +23,7 @@ from app.training_service import (
     equipment_key,
     estimated_minutes,
     exercise_history,
+    format_day,
     format_duration,
     format_kg,
     has_illustration,
@@ -35,6 +36,7 @@ from app.training_service import (
     prescription,
     progress_chart,
     recommended_kg,
+    retired_exercises,
     routine_items,
     session_logs,
     shared_for_clone,
@@ -84,6 +86,24 @@ class SharedRoutineCard:
     hidden_count: int
     showing_all: bool
     pending: bool
+    updated_note: str = ""
+    frozen_note: str = ""
+
+
+def _share_notes(share: SharedWorkout | None) -> tuple[str, str]:
+    """(nota de actualización, nota de copia fija) para la receptora."""
+    if share is None:
+        return "", ""
+    name = share.from_user.display_name if share.from_user else "quien la compartió"
+    source = share.source_template
+    if source is not None and source.deleted_at:
+        return "", (
+            f"{name} eliminó la rutina original el {format_day(source.deleted_at)}; "
+            "tu copia queda como estaba."
+        )
+    if share.source_updated_at:
+        return f"Actualizada por {name} el {format_day(share.source_updated_at)}", ""
+    return "", ""
 
 
 def _user_ctx(user: User) -> dict:
@@ -98,7 +118,7 @@ def _template_cards(db: Session, user_id: int) -> list[TemplateCard]:
         .options(
             joinedload(WorkoutTemplate.items).joinedload(WorkoutTemplateExercise.exercise)
         )
-        .filter(WorkoutTemplate.owner_user_id == user_id)
+        .filter(WorkoutTemplate.owner_user_id == user_id, WorkoutTemplate.deleted_at.is_(None))
     )
     if clones:
         query = query.filter(WorkoutTemplate.id.not_in(clones))
@@ -139,6 +159,7 @@ def _shared_routine_cards(db: Session, user_id: int) -> list[SharedRoutineCard]:
             .filter(
                 WorkoutTemplate.id == share.cloned_template_id,
                 WorkoutTemplate.owner_user_id == user_id,
+                WorkoutTemplate.deleted_at.is_(None),
             )
             .one_or_none()
         )
@@ -146,6 +167,7 @@ def _shared_routine_cards(db: Session, user_id: int) -> list[SharedRoutineCard]:
             continue
         routine = routine_items(template, enabled, shared=True)
         progress = 0 if pending else template_progress(db, user_id, template, routine.items)[0]
+        updated_note, frozen_note = ("", "") if pending else _share_notes(share)
         cards.append(
             SharedRoutineCard(
                 share_id=share.id,
@@ -160,6 +182,8 @@ def _shared_routine_cards(db: Session, user_id: int) -> list[SharedRoutineCard]:
                 hidden_count=routine.hidden_count,
                 showing_all=routine.showing_all,
                 pending=pending,
+                updated_note=updated_note,
+                frozen_note=frozen_note,
             )
         )
     cards.sort(key=lambda c: not c.pending)
@@ -287,6 +311,7 @@ def build_day_context(db: Session, user: User, template_id: int) -> dict | None:
             }
         )
     session_open = bool(session and session.completed_at is None and 0 < progress)
+    updated_note, frozen_note = _share_notes(shared_from)
     return {
         "user": _user_ctx(user),
         "template": template,
@@ -299,6 +324,12 @@ def build_day_context(db: Session, user: User, template_id: int) -> dict | None:
         "resume_url": f"/app/session/{session.id}/exercise/1" if session_open else "",
         "family_users": _family_users(db, user),
         "shared_from": shared_from.from_user.display_name if shared_from else "",
+        "updated_note": updated_note,
+        "frozen_note": frozen_note,
+        "retired": [
+            {"exercise": ex, "image": image_url(ex), "illustrated": has_illustration(ex)}
+            for ex in retired_exercises(db, user.id, template)
+        ],
         "active_tab": "workouts",
     }
 

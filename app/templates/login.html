@@ -1,21 +1,44 @@
 {% extends "base.html" %}
 {% block title %}Iniciar sesión — GymVe{% endblock %}
+{% block body_class %}page-auth page-login{% endblock %}
+{% block shell_class %}auth-shell{% endblock %}
 {% block content %}
-<header class="brand">
-  <div class="brand-mark" aria-hidden="true">GV</div>
-  <h1>GymVe</h1>
-  <p class="subtitle">Tu gimnasio en familia</p>
-  <ul class="tagline-pills" aria-label="Valores">
-    <li class="pill pill-purple">Familia</li>
-    <li class="pill pill-cyan">Energía</li>
-    <li class="pill pill-coral">Progreso</li>
+<header class="auth-hero">
+  <div class="logo-mark" aria-hidden="true">
+    <div class="logo-ring"></div>
+    <svg class="logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 18h4v12H8V18zm28 0h4v12h-4V18z" fill="url(#gv-bar)" />
+      <path d="M12 22h24v4H12v-4z" fill="url(#gv-bar)" />
+      <circle cx="10" cy="24" r="5" stroke="url(#gv-ring)" stroke-width="2.5" fill="rgba(255,255,255,0.15)" />
+      <circle cx="38" cy="24" r="5" stroke="url(#gv-ring)" stroke-width="2.5" fill="rgba(255,255,255,0.15)" />
+      <defs>
+        <linearGradient id="gv-bar" x1="8" y1="18" x2="40" y2="30" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#A78BFA" />
+          <stop offset="0.5" stop-color="#38BDF8" />
+          <stop offset="1" stop-color="#F472B6" />
+        </linearGradient>
+        <linearGradient id="gv-ring" x1="5" y1="19" x2="43" y2="29" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#C4F042" />
+          <stop offset="1" stop-color="#818CF8" />
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+  <h1 class="auth-title">GymVe</h1>
+  <p class="auth-tagline">Tu energía, tu ritmo, tu progreso</p>
+  <ul class="tag-pills">
+    <li>Fuerza</li>
+    <li>Constancia</li>
+    <li>Familia</li>
   </ul>
 </header>
 
-<main class="card card-login">
+<main class="glass-card">
   {% if error %}
   <div class="alert alert-error" role="alert">{{ error }}</div>
   {% endif %}
+
+  <p class="card-heading">Acceso familiar</p>
 
   <form method="post" action="/login" id="login-form" novalidate>
     <label class="field">
@@ -49,7 +72,9 @@
       <strong>carácter especial</strong> (por ejemplo <code>!</code>, <code>@</code>, <code>#</code>).
     </p>
 
-    <button type="submit" class="btn btn-primary">Entrar</button>
+    <button type="submit" class="btn btn-gradient">Entrar</button>
   </form>
 </main>
+
+<p class="auth-footer-note">GymVe · entrenamiento con estilo</p>
 {% endblock %}

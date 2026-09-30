@@ -8,13 +8,27 @@ import httpx
 SPECIAL = set("!@#$%^&*()_+-=[]{}|;:',.<>?/`~\"\\")
 DEFAULT_API = os.getenv("GYMVE_API_BASE_URL", "http://10.0.2.2:8000").rstrip("/")
 
-ACCENT = "#7C3AED"
-ACCENT_HOVER = "#6D28D9"
-BG = "#FAF8FF"
-TEXT = "#1A1625"
-MUTED = "#5C5470"
-PANEL_GRADIENT_START = "#EDE9FE"
-PANEL_GRADIENT_END = "#FFEDD5"
+VIOLET_DEEP = "#5B21B6"
+ELECTRIC = "#2563EB"
+PINK = "#EC4899"
+LIME = "#C4F042"
+SKY = "#38BDF8"
+BG_DARK = "#120828"
+TEXT = "#F8FAFC"
+MUTED = "rgba(248,250,252,0.72)"
+GLASS = "rgba(255,255,255,0.11)"
+
+BTN_GRADIENT = ft.LinearGradient(
+    begin=ft.alignment.center_left,
+    end=ft.alignment.center_right,
+    colors=[LIME, SKY, PINK, "#A78BFA"],
+)
+
+PAGE_GRADIENT = ft.LinearGradient(
+    begin=ft.alignment.top_left,
+    end=ft.alignment.bottom_right,
+    colors=[BG_DARK, VIOLET_DEEP, ELECTRIC, "#4C1D95"],
+)
 
 
 def policy_ok(password: str) -> tuple[bool, str]:
@@ -25,31 +39,47 @@ def policy_ok(password: str) -> tuple[bool, str]:
     return True, ""
 
 
+def field_style() -> dict:
+    return {
+        "bgcolor": "rgba(15,10,40,0.55)",
+        "border_color": "rgba(255,255,255,0.22)",
+        "focused_border_color": LIME,
+        "color": TEXT,
+        "label_style": ft.TextStyle(color=MUTED, size=12),
+        "text_style": ft.TextStyle(color=TEXT, size=16),
+        "border_radius": 12,
+        "content_padding": ft.padding.symmetric(horizontal=16, vertical=14),
+    }
+
+
 def main(page: ft.Page) -> None:
     page.title = "GymVe"
-    page.bgcolor = BG
-    page.padding = 24
-    page.theme_mode = ft.ThemeMode.LIGHT
+    page.padding = 0
+    page.theme_mode = ft.ThemeMode.DARK
     page.theme = ft.Theme(font_family="Roboto")
+    page.bgcolor = BG_DARK
 
     api_field = ft.TextField(
         label="URL del servidor API",
         value=page.client_storage.get("gymve_api_base") or DEFAULT_API,
         hint_text="http://192.168.1.10:8000",
         autofocus=False,
+        **field_style(),
     )
     email_field = ft.TextField(
         label="Correo electrónico",
         keyboard_type=ft.KeyboardType.EMAIL,
         autocorrect=False,
+        **field_style(),
     )
     password_field = ft.TextField(
         label="Contraseña",
         password=True,
         can_reveal_password=True,
+        **field_style(),
     )
-    error_text = ft.Text("", color="#A32D2D", size=13, visible=False)
-    loading = ft.ProgressRing(visible=False, width=22, height=22)
+    error_text = ft.Text("", color="#FCA5A5", size=13, visible=False)
+    loading = ft.ProgressRing(visible=False, width=22, height=22, color=LIME)
 
     home_content = ft.Column(visible=False, spacing=12)
     login_card = ft.Column(spacing=12)
@@ -66,24 +96,32 @@ def main(page: ft.Page) -> None:
         home_content.controls.extend(
             [
                 ft.Text("Bienvenido/a", size=12, color=MUTED),
-                ft.Text(profile.get("display_name", ""), size=22, weight=ft.FontWeight.W_500),
-                ft.Text(profile.get("email", ""), size=13, color=MUTED),
+                ft.Text(
+                    profile.get("display_name", ""),
+                    size=26,
+                    weight=ft.FontWeight.W_600,
+                    color=TEXT,
+                ),
+                ft.Text(profile.get("email", ""), size=14, color=MUTED),
                 ft.Container(
-                    gradient=ft.LinearGradient(
-                        begin=ft.alignment.top_left,
-                        end=ft.alignment.bottom_right,
-                        colors=[PANEL_GRADIENT_START, "#CFFAFE", PANEL_GRADIENT_END],
-                    ),
-                    border=ft.border.all(0.5, "#C4B5FD"),
-                    border_radius=10,
-                    padding=14,
+                    bgcolor="rgba(255,255,255,0.1)",
+                    border=ft.border.all(0.5, "rgba(196,240,66,0.35)"),
+                    border_radius=12,
+                    padding=16,
                     content=ft.Text(
                         "Sesión iniciada. Aquí irán rutinas y progreso de GymVe.",
                         size=13,
-                        color=TEXT,
+                        color=MUTED,
                     ),
                 ),
-                ft.OutlinedButton("Cerrar sesión", on_click=logout_click),
+                ft.OutlinedButton(
+                    "Cerrar sesión",
+                    on_click=logout_click,
+                    style=ft.ButtonStyle(
+                        color=TEXT,
+                        side=ft.BorderSide(0.5, "rgba(255,255,255,0.28)"),
+                    ),
+                ),
             ]
         )
         page.update()
@@ -140,64 +178,114 @@ def main(page: ft.Page) -> None:
             loading.visible = False
             page.update()
 
+    logo = ft.Container(
+        width=72,
+        height=72,
+        border_radius=36,
+        gradient=BTN_GRADIENT,
+        alignment=ft.alignment.center,
+        content=ft.Text("GV", size=22, weight=ft.FontWeight.W_600, color=BG_DARK),
+    )
+
+    glass = lambda child: ft.Container(
+        content=child,
+        bgcolor=GLASS,
+        border=ft.border.all(0.5, "rgba(255,255,255,0.28)"),
+        border_radius=16,
+        padding=ft.padding.symmetric(horizontal=22, vertical=24),
+    )
+
     login_card.controls.extend(
         [
+            ft.Row([logo], alignment=ft.MainAxisAlignment.CENTER),
+            ft.Text(
+                "GymVe",
+                size=32,
+                weight=ft.FontWeight.W_600,
+                text_align=ft.TextAlign.CENTER,
+                color=TEXT,
+            ),
+            ft.Text(
+                "Tu energía, tu ritmo, tu progreso",
+                size=14,
+                color=MUTED,
+                text_align=ft.TextAlign.CENTER,
+            ),
             ft.Row(
                 [
                     ft.Container(
-                        width=56,
-                        height=56,
-                        border_radius=10,
-                        gradient=ft.LinearGradient(
-                            begin=ft.alignment.top_left,
-                            end=ft.alignment.bottom_right,
-                            colors=["#7C3AED", "#DB2777", "#F97316"],
-                        ),
-                        alignment=ft.alignment.center,
-                        content=ft.Text("GV", color=ft.Colors.WHITE, size=16, weight=ft.FontWeight.W_500),
-                    )
-                ],
-                alignment=ft.MainAxisAlignment.CENTER,
-            ),
-            ft.Text("GymVe", size=26, weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER, color=ACCENT),
-            ft.Text("Tu gimnasio en familia", size=13, color=MUTED, text_align=ft.TextAlign.CENTER),
-            api_field,
-            email_field,
-            password_field,
-            ft.Text(
-                "Mín. 10 caracteres y un símbolo especial (!@#…).",
-                size=11,
-                color="#A0A099",
-            ),
-            error_text,
-            ft.Row(
-                [
-                    ft.ElevatedButton(
-                        "Entrar",
-                        bgcolor=ACCENT,
-                        color=ft.Colors.WHITE,
-                        on_click=submit_login,
-                        expand=True,
-                        style=ft.ButtonStyle(
-                            shape=ft.RoundedRectangleBorder(radius=10),
-                            elevation=4,
-                            overlay_color=ACCENT_HOVER,
-                        ),
+                        content=ft.Text("Fuerza", size=11, color=TEXT),
+                        padding=ft.padding.symmetric(horizontal=12, vertical=6),
+                        border_radius=20,
+                        bgcolor="rgba(255,255,255,0.12)",
+                        border=ft.border.all(0.5, "rgba(255,255,255,0.22)"),
                     ),
-                    loading,
+                    ft.Container(
+                        content=ft.Text("Constancia", size=11, color=TEXT),
+                        padding=ft.padding.symmetric(horizontal=12, vertical=6),
+                        border_radius=20,
+                        bgcolor="rgba(255,255,255,0.12)",
+                        border=ft.border.all(0.5, "rgba(255,255,255,0.22)"),
+                    ),
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
+                wrap=True,
+            ),
+            glass(
+                ft.Column(
+                    [
+                        ft.Text("Acceso familiar", size=18, weight=ft.FontWeight.W_500, color=TEXT),
+                        api_field,
+                        email_field,
+                        password_field,
+                        ft.Text(
+                            "Mín. 10 caracteres y un símbolo especial (!@#…).",
+                            size=11,
+                            color="rgba(248,250,252,0.55)",
+                        ),
+                        error_text,
+                        ft.Row(
+                            [
+                                ft.Container(
+                                    content=ft.Text(
+                                        "Entrar",
+                                        size=15,
+                                        weight=ft.FontWeight.W_500,
+                                        color=BG_DARK,
+                                        text_align=ft.TextAlign.CENTER,
+                                    ),
+                                    gradient=BTN_GRADIENT,
+                                    border_radius=12,
+                                    padding=ft.padding.symmetric(vertical=14),
+                                    expand=True,
+                                    alignment=ft.alignment.center,
+                                    on_click=submit_login,
+                                    ink=True,
+                                ),
+                                loading,
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER,
+                        ),
+                    ],
+                    spacing=12,
+                )
             ),
         ]
     )
 
     page.add(
-        ft.Column(
-            [
-                login_card,
-                home_content,
-            ],
-            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+        ft.Container(
+            expand=True,
+            gradient=PAGE_GRADIENT,
+            padding=24,
+            content=ft.Column(
+                [
+                    login_card,
+                    home_content,
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+                scroll=ft.ScrollMode.AUTO,
+            ),
         )
     )
 

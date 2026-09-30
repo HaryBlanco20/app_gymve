@@ -1,5 +1,9 @@
-const CACHE = "gymve-v1";
-const ASSETS = ["/static/app.css", "/static/app.js", "/static/manifest.webmanifest"];
+const CACHE = "gymve-v20250930";
+const ASSETS = [
+  "/static/app.css?v=20250930",
+  "/static/app.js?v=20250930",
+  "/static/manifest.webmanifest?v=20250930",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));
@@ -7,7 +11,11 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener("fetch", (event) => {

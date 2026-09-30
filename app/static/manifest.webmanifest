@@ -1,12 +1,12 @@
 {
   "name": "GymVe",
   "short_name": "GymVe",
-  "description": "GymVe — acceso familiar",
+  "description": "GymVe — entrenamiento con estilo",
   "lang": "es",
   "start_url": "/login",
   "display": "standalone",
-  "background_color": "#FAF8FF",
-  "theme_color": "#7C3AED",
+  "background_color": "#120828",
+  "theme_color": "#5B21B6",
   "orientation": "portrait-primary",
   "icons": [
     {

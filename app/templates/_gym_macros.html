@@ -1,0 +1,17 @@
+{% macro ring(percent, text="", caption="", size="md", tone="") -%}
+{%- set pct = [[percent | int, 0] | max, 100] | min -%}
+<div class="gv-ring gv-ring-{{ size }}{% if tone %} gv-ring-{{ tone }}{% elif pct == 0 %} gv-ring-zero{% endif %}">
+  <svg viewBox="0 0 36 36" aria-hidden="true">
+    <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+    <path class="ring-fill" stroke-dasharray="{{ pct }}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+  </svg>
+  <span class="gv-ring-text">{{ text if text else (pct ~ '%') }}</span>
+</div>
+{%- if caption %}<p class="gv-ring-caption">{{ caption }}</p>{% endif -%}
+{%- endmacro %}
+
+{% macro thumb(image, illustrated, alt, size="md") -%}
+<span class="gv-thumb gv-thumb-{{ size }}{% if illustrated %} is-illustration{% else %} is-icon{% endif %}">
+  <img src="{{ image }}" alt="{{ alt }}" loading="lazy" />
+</span>
+{%- endmacro %}

@@ -1,4 +1,5 @@
 {% extends "app_base.html" %}
+{% from "_gym_macros.html" import ring %}
 {% block title %}Inicio — GymVe{% endblock %}
 {% block content %}
 <section class="gym-greeting">
@@ -32,18 +33,12 @@
 <section class="gym-section">
   <h2 class="gym-section-title">Próximo entrenamiento</h2>
   {% if featured_template %}
-  <a href="/app/workouts" class="workout-day-card featured">
-    <div class="workout-day-ring" style="--day-progress: {{ day_progress }};">
-      <svg viewBox="0 0 36 36" aria-hidden="true">
-        <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-        <path class="ring-fill" stroke-dasharray="{{ day_progress }}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-      </svg>
-      <span class="day-ring-text">{{ day_progress }}%</span>
-    </div>
+  <a href="/app/workouts/{{ featured_template.id }}" class="workout-day-card featured">
+    {{ ring(day_progress, size="sm") }}
     <div class="workout-day-body">
       <p class="workout-day-focus">{{ featured_template.focus | capitalize }}</p>
       <h3 class="workout-day-title">{{ featured_template.title }}</h3>
-      <p class="workout-day-meta">{{ featured_template.exercise_count }} ejercicios · Nautilus + mancuernas</p>
+      <p class="workout-day-meta">{{ featured_template.exercise_count }} ejercicios</p>
     </div>
     <i class="ti ti-chevron-right workout-day-chevron"></i>
   </a>
@@ -57,8 +52,8 @@
 <section class="gym-section">
   <h2 class="gym-section-title">Equipo configurado</h2>
   <div class="equipment-chips">
-    <span class="chip"><i class="ti ti-device-desktop"></i> Máquinas Nautilus</span>
-    <span class="chip"><i class="ti ti-barbell"></i> Mancuernas</span>
+    {% for eq in equipment %}<span class="chip"><i class="ti {{ eq.icon }}"></i> {{ eq.label }}</span>{% else %}<span class="gv-muted-sm">Sin equipo activo.</span>{% endfor %}
+    <a href="/app/gym" class="chip chip-link"><i class="ti ti-adjustments"></i> Editar</a>
   </div>
 </section>
 {% endblock %}

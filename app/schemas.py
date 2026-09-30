@@ -22,8 +22,41 @@ class UserProfile(BaseModel):
 
 
 class EquipmentTypeSchema(str, Enum):
-    nautilus_machine = "nautilus_machine"
+    machine = "machine"
+    cable = "cable"
+    smith = "smith"
     dumbbell = "dumbbell"
+    cardio = "cardio"
+
+
+class StartSessionResponse(BaseModel):
+    session_id: int
+    url: str
+
+
+class LogSetRequest(BaseModel):
+    exercise_id: int = Field(ge=1)
+    weight_kg: float = Field(default=0, ge=0, le=500)
+    reps: int = Field(default=0, ge=0, le=200)
+    duration_min: float | None = Field(default=None, gt=0, le=300)
+
+
+class LogSetResponse(BaseModel):
+    id: int
+    set_number: int
+    weight_kg: float
+    reps: int
+    duration_min: float | None
+
+
+class EquipmentPrefsRequest(BaseModel):
+    enabled: list[EquipmentTypeSchema] = Field(max_length=10)
+
+
+class MachineUpdateRequest(BaseModel):
+    brand: str = Field(default="", max_length=80)
+    model: str = Field(default="", max_length=120)
+    confirmed: bool = False
 
 
 class SharedStatusSchema(str, Enum):

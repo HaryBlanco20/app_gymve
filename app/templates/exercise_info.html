@@ -1,0 +1,97 @@
+{% extends "app_base.html" %}
+{% block title %}{{ exercise.name }} — GymVe{% endblock %}
+{% block content %}
+<div class="gv-pagebar">
+  <a href="{{ back }}" class="gym-icon-btn gv-back" aria-label="Volver"><i class="ti ti-arrow-left"></i></a>
+  <p class="gv-pagebar-title">{{ group_label }}</p>
+  <span class="gv-pagebar-spacer"></span>
+</div>
+
+<nav class="gv-tabs" aria-label="Secciones del ejercicio">
+  {% for key, label in tabs %}
+  <a href="/app/exercises/{{ exercise.id }}?tab={{ key }}&back={{ back | urlencode }}" class="gv-tab{% if key == tab %} active{% endif %}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>
+
+{% if tab == "info" %}
+<div class="gv-hero{% if illustrated %} is-illustration{% else %} is-icon{% endif %}{% if image_end %} has-pair{% endif %}">
+  <img src="{{ image }}" alt="{{ exercise.name }} — posición inicial" />
+  {% if image_end %}<img src="{{ image_end }}" alt="{{ exercise.name }} — posición final" />{% endif %}
+</div>
+<h1 class="gv-ex-title">{{ exercise.name }}</h1>
+<p class="gv-chips-inline">
+  <span class="chip">{{ equipment_label }}</span>
+  {% if machine %}<span class="chip"><i class="ti ti-tool"></i> {{ machine }}</span>{% endif %}
+</p>
+{% if exercise.description %}<p class="gv-prose">{{ exercise.description }}</p>{% endif %}
+{% if steps %}
+<h2 class="gv-subtitle">Instrucciones</h2>
+<ol class="gv-steps">
+  {% for step in steps %}
+  <li><span class="gv-step-n">{{ loop.index }}</span><span>{{ step }}</span></li>
+  {% endfor %}
+</ol>
+{% endif %}
+
+{% elif tab == "musculos" %}
+<div class="gv-hero is-icon gv-hero-sm">
+  <img src="/static/exercises/groups/{{ exercise.muscle_group if exercise.muscle_group else 'general' }}.svg" alt="Grupo muscular: {{ group_label }}" />
+</div>
+<h1 class="gv-ex-title">{{ exercise.name }}</h1>
+<h2 class="gv-subtitle">Músculos principales</h2>
+<p class="gv-chips-inline">{% for m in primary %}<span class="chip chip-primary">{{ m }}</span>{% else %}<span class="gv-muted-sm">—</span>{% endfor %}</p>
+<h2 class="gv-subtitle">Músculos secundarios</h2>
+<p class="gv-chips-inline">{% for m in secondary %}<span class="chip">{{ m }}</span>{% else %}<span class="gv-muted-sm">Ninguno destacado</span>{% endfor %}</p>
+
+{% elif tab == "historial" %}
+<h1 class="gv-ex-title">{{ exercise.name }}</h1>
+<p class="gv-muted-sm">Solo ves tus propios registros.</p>
+{% for day in history %}
+<div class="gv-history-card">
+  <p class="gv-history-date">{{ day.label }}</p>
+  <ul class="gv-set-list compact">
+    {% for log in day.sets %}
+    <li><span class="gv-set-n">#{{ log.set_number }}</span>
+      <span class="gv-set-val">{% if cardio %}{{ format_kg(log.duration_min or 0) }} min{% else %}{{ format_kg(log.weight_kg) }} kg × {{ log.reps }}{% endif %}</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% else %}
+<p class="gym-empty">Aún no hay registros. Empieza un entrenamiento que incluya este ejercicio.</p>
+{% endfor %}
+
+{% elif tab == "progreso" %}
+<h1 class="gv-ex-title">{{ exercise.name }}</h1>
+{% if chart %}
+<p class="gv-muted-sm">{{ chart.metric_label }}{% if not cardio %} · mejor: {{ one_rm }} kg (fórmula de Epley, orientativa){% endif %}</p>
+<figure class="gv-chart">
+  <svg viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="{{ chart.metric_label }}">
+    <line class="gv-chart-axis" x1="28" y1="18" x2="28" y2="{{ chart.height - 18 }}" />
+    <line class="gv-chart-axis" x1="28" y1="{{ chart.height - 18 }}" x2="{{ chart.width - 12 }}" y2="{{ chart.height - 18 }}" />
+    <text class="gv-chart-label" x="24" y="22" text-anchor="end">{{ chart.y_max_label }}</text>
+    <text class="gv-chart-label" x="24" y="{{ chart.height - 18 }}" text-anchor="end">{{ chart.y_min_label }}</text>
+    <polyline class="gv-chart-line" points="{{ chart.points }}" />
+    {% for x, y, label in chart.dots %}
+    <circle class="gv-chart-dot" cx="{{ x }}" cy="{{ y }}" r="3.5"><title>{{ label }}</title></circle>
+    {% endfor %}
+    <text class="gv-chart-label" x="28" y="{{ chart.height - 4 }}">{{ chart.x_first_label }}</text>
+    <text class="gv-chart-label" x="{{ chart.width - 12 }}" y="{{ chart.height - 4 }}" text-anchor="end">{{ chart.x_last_label }}</text>
+  </svg>
+</figure>
+<ul class="gv-set-list compact">
+  {% for x, y, label in chart.dots | reverse %}<li><span class="gv-set-val">{{ label }}</span></li>{% endfor %}
+</ul>
+{% else %}
+<p class="gym-empty">Registra al menos una serie para ver tu progreso.</p>
+{% endif %}
+{% endif %}
+
+<footer class="gv-credit">
+  {% if credit_everkinetic %}
+  Ilustración: <a href="https://github.com/everkinetic/data" rel="noopener" target="_blank">Everkinetic</a> (Greg Priday, everkinetic.com) · licencia <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" rel="noopener" target="_blank">CC BY-SA 4.0</a>, sin modificar.
+  {% else %}
+  Icono del grupo muscular: diseño original GymVe.
+  {% endif %}
+  Textos: GymVe.
+</footer>
+{% endblock %}

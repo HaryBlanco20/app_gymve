@@ -1,0 +1,119 @@
+{% extends "app_base.html" %}
+{% from "_gym_macros.html" import ring %}
+{% block title %}{{ n }}/{{ total }} {{ group_label }} — GymVe{% endblock %}
+{% block content %}
+<div class="gv-pagebar">
+  <a href="{{ day_url }}" class="gym-icon-btn gv-back" aria-label="Volver al día"><i class="ti ti-arrow-left"></i></a>
+  <p class="gv-pagebar-title">{{ n }}/{{ total }} {{ group_label }}</p>
+  <a href="/app/exercises/{{ exercise.id }}?back=/app/session/{{ session.id }}/exercise/{{ n }}" class="gym-icon-btn" aria-label="Información del ejercicio"><i class="ti ti-info-circle"></i></a>
+</div>
+
+<div class="gv-hero{% if illustrated %} is-illustration{% else %} is-icon{% endif %}">
+  <img src="{{ image }}" alt="{{ exercise.name }}" />
+</div>
+
+<section class="gv-ex-head">
+  <h1 class="gv-ex-title">{{ exercise.name }}</h1>
+  {% if cardio %}
+  <p class="gv-ex-rec">Tiempo recomendado: <strong>{{ item.duration_min or 5 }} min</strong></p>
+  {% elif item.intensity_pct %}
+  <p class="gv-ex-rec">Peso recomendado: <strong>{{ item.intensity_pct }}% del peso máximo</strong>{% if suggested_kg %} · ≈ {{ suggested_kg }} kg según tu historial{% endif %}</p>
+  {% else %}
+  <p class="gv-ex-rec">Peso recomendado: <strong>el que te permita {{ item.default_reps }} repeticiones con buena técnica</strong></p>
+  {% endif %}
+  {% if machine %}<p class="gv-muted-sm"><i class="ti ti-tool"></i> {{ machine }}</p>{% endif %}
+</section>
+
+<section class="gv-rings"
+  id="session-panel"
+  data-session-id="{{ session.id }}"
+  data-exercise-id="{{ exercise.id }}"
+  data-cardio="{{ 1 if cardio else 0 }}"
+  data-rest="{{ item.rest_seconds }}"
+  data-duration="{{ (item.duration_min or 5) * 60 }}">
+  <div class="gv-ring-cell">
+    {% if cardio %}
+    {{ ring(0, text="No", size="lg", tone="muted") }}
+    {% else %}
+    {{ ring(100, text=item.default_reps ~ '', size="lg") }}
+    {% endif %}
+    <p class="gv-ring-caption">Repeticiones necesarias</p>
+  </div>
+  <div class="gv-ring-cell">
+    <button type="button" class="gv-timer" id="rest-timer" aria-live="polite">
+      <svg viewBox="0 0 36 36" aria-hidden="true">
+        <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        <path class="ring-fill" id="rest-timer-fill" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+      </svg>
+      <span class="gv-timer-text" id="rest-timer-text">{% if cardio %}COMENZAR{% else %}{{ '%02d:%02d' | format(item.rest_seconds // 60, item.rest_seconds % 60) }}{% endif %}</span>
+      <span class="gv-timer-hint" id="rest-timer-hint"><i class="ti ti-player-play"></i></span>
+    </button>
+    <p class="gv-ring-caption">{% if cardio %}Cronómetro{% else %}Descanso{% endif %}</p>
+  </div>
+  <div class="gv-ring-cell">
+    {{ ring((done_ratio * 100) | round | int, text=done ~ '/' ~ planned, size="lg") }}
+    <p class="gv-ring-caption">{% if cardio %}Minutos completados{% else %}Series completadas{% endif %}</p>
+  </div>
+</section>
+
+<form class="gv-log-form" id="log-set-form" autocomplete="off">
+  {% if cardio %}
+  <label class="gv-input"><span class="sr-only">Minutos</span>
+    <input type="number" name="duration_min" inputmode="decimal" step="0.5" min="0.5" max="300" placeholder="Minutos" value="{{ prefill_min }}" required />
+  </label>
+  {% else %}
+  <label class="gv-input"><span class="sr-only">Kilogramos</span>
+    <input type="number" name="weight_kg" inputmode="decimal" step="0.5" min="0" max="500" placeholder="Kilogramos" value="{{ prefill_kg }}" />
+  </label>
+  <label class="gv-input"><span class="sr-only">Repeticiones</span>
+    <input type="number" name="reps" inputmode="numeric" step="1" min="1" max="200" placeholder="Repeticiones" value="{{ prefill_reps }}" required />
+  </label>
+  {% endif %}
+  <button type="submit" class="gv-btn-add" aria-label="Guardar serie"><i class="ti ti-plus"></i></button>
+</form>
+<p class="share-feedback" id="log-feedback" hidden></p>
+
+<section class="gym-section">
+  <h2 class="gym-section-title">Hoy</h2>
+  <ul class="gv-set-list">
+    {% for log in today_sets %}
+    <li>
+      <span class="gv-set-n">#{{ log.set_number }}</span>
+      {% if cardio %}
+      <span class="gv-set-val">{{ format_kg(log.duration_min or 0) }} min</span>
+      {% else %}
+      <span class="gv-set-val">{{ format_kg(log.weight_kg) }} kg × {{ log.reps }}</span>
+      {% endif %}
+      <button type="button" class="gv-set-del" data-delete-set="{{ log.id }}" aria-label="Borrar serie {{ log.set_number }}"><i class="ti ti-trash"></i></button>
+    </li>
+    {% else %}
+    <li class="gv-set-empty">Aún no registras series de este ejercicio.</li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="gym-section">
+  <h2 class="gym-section-title gv-title-row">Historial
+    <a href="/app/exercises/{{ exercise.id }}?tab=progreso&back=/app/session/{{ session.id }}/exercise/{{ n }}" class="gv-link">Gráfica <i class="ti ti-chevron-right"></i></a>
+  </h2>
+  {% for day in history %}
+  <div class="gv-history-day">
+    <p class="gv-history-date">{{ day.label }}</p>
+    <p class="gv-history-sets">
+      {% for log in day.sets %}{% if cardio %}{{ format_kg(log.duration_min or 0) }} min{% else %}{{ format_kg(log.weight_kg) }}×{{ log.reps }}{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}
+    </p>
+  </div>
+  {% else %}
+  <p class="gv-set-empty">Sin registros anteriores.</p>
+  {% endfor %}
+</section>
+
+<nav class="gv-step-nav" aria-label="Ejercicios de la sesión">
+  {% if prev_url %}<a class="gv-btn-ghost" href="{{ prev_url }}"><i class="ti ti-chevron-left"></i> Anterior</a>{% else %}<span></span>{% endif %}
+  {% if next_url %}
+  <a class="gym-btn-primary gv-btn-link" href="{{ next_url }}">Siguiente <i class="ti ti-chevron-right"></i></a>
+  {% else %}
+  <button type="button" class="gym-btn-primary" data-complete-session="{{ session.id }}">Terminar entrenamiento</button>
+  {% endif %}
+</nav>
+{% endblock %}

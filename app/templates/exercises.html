@@ -1,0 +1,38 @@
+{% extends "app_base.html" %}
+{% from "_gym_macros.html" import thumb %}
+{% block title %}Ejercicios — GymVe{% endblock %}
+{% block content %}
+<section class="gym-greeting">
+  <h1 class="gym-page-title">Ejercicios</h1>
+  <p class="gym-lead">
+    {% if show_all %}Todo el catálogo. <a href="/app/exercises" class="gv-link">Ver solo mi equipo</a>
+    {% else %}Según tu equipo en <a href="/app/gym" class="gv-link">Mi gym</a>.{% if hidden %} {{ hidden }} ocultos · <a href="/app/exercises?todo=1" class="gv-link">ver todos</a>{% endif %}{% endif %}
+  </p>
+</section>
+
+<nav class="gv-tabs gv-tabs-scroll" aria-label="Grupos musculares">
+  {% for group in groups %}<a class="gv-tab" href="#g-{{ group.key }}">{{ group.label }}</a>{% endfor %}
+</nav>
+
+{% for group in groups %}
+<section class="gym-section" id="g-{{ group.key }}">
+  <h2 class="gym-section-title">{{ group.label }}</h2>
+  <ul class="gv-exercise-list">
+    {% for row in group.rows %}
+    <li>
+      <a class="gv-exercise-row" href="/app/exercises/{{ row.exercise.id }}">
+        {{ thumb(row.image, row.illustrated, row.exercise.name) }}
+        <span class="gv-exercise-row-body">
+          <span class="gv-exercise-name">{{ row.exercise.name }}</span>
+          <span class="gv-exercise-rx">{{ row.equipment }}</span>
+        </span>
+        <i class="ti ti-chevron-right gv-chevron"></i>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% else %}
+<p class="gym-empty">No hay ejercicios con tu equipo actual.</p>
+{% endfor %}
+{% endblock %}

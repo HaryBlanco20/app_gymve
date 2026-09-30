@@ -1,0 +1,81 @@
+{% extends "app_base.html" %}
+{% from "_gym_macros.html" import ring, thumb %}
+{% block title %}{{ template.title }} — GymVe{% endblock %}
+{% block content %}
+<div class="gv-pagebar">
+  <a href="/app/workouts" class="gym-icon-btn gv-back" aria-label="Volver a entrenamientos"><i class="ti ti-arrow-left"></i></a>
+  <p class="gv-pagebar-title">Entrenamiento</p>
+  <button type="button" class="gym-icon-btn" data-open-dialog="share-dialog" aria-label="Compartir rutina"><i class="ti ti-share"></i></button>
+</div>
+
+<section class="gv-day-header">
+  {{ ring(progress, size="md") }}
+  <div class="gv-day-header-body">
+    <p class="workout-day-focus">
+      {% if template.day_number %}{{ template.day_number }}.º día de entrenamiento{% else %}{{ template.focus | capitalize }}{% endif %}
+      <span class="gv-estimate">{{ estimated }}</span>
+    </p>
+    <h1 class="gv-day-title">{{ template.title }}</h1>
+    {% if shared_from %}<p class="gv-muted-sm"><i class="ti ti-users"></i> Compartida por {{ shared_from }} · tus registros son solo tuyos</p>{% endif %}
+  </div>
+</section>
+
+{% if hidden_count %}
+<p class="gv-note"><i class="ti ti-filter"></i> {{ hidden_count }} ejercicio{{ 's' if hidden_count > 1 }} oculto{{ 's' if hidden_count > 1 }} por tu equipo en <a href="/app/gym">Mi gym</a>.</p>
+{% endif %}
+
+<ul class="gv-exercise-list">
+  {% for row in rows %}
+  <li>
+    <a class="gv-exercise-row" href="/app/exercises/{{ row.exercise.id }}?back=/app/workouts/{{ template.id }}">
+      {{ thumb(row.image, row.illustrated, row.exercise.name) }}
+      <span class="gv-exercise-row-body">
+        <span class="gv-exercise-name">{{ row.exercise.name }}</span>
+        <span class="gv-exercise-rx">{{ row.prescription }}</span>
+        {% if row.done %}<span class="gv-exercise-done">{{ row.done }}/{{ row.planned }} series hechas</span>{% endif %}
+      </span>
+      <i class="ti ti-chevron-right gv-chevron"></i>
+    </a>
+  </li>
+  {% else %}
+  <li class="gym-empty">Ningún ejercicio coincide con tu equipo. Activa más tipos en <a href="/app/gym">Mi gym</a>.</li>
+  {% endfor %}
+</ul>
+
+{% if rows %}
+<div class="gv-sticky-cta">
+  <button type="button" class="gv-btn-cta" data-start-workout="{{ template.id }}">
+    {% if session_open %}CONTINUAR ENTRENAMIENTO{% else %}COMENZAR ENTRENAMIENTO{% endif %}
+  </button>
+  <p class="share-feedback" id="start-feedback" hidden></p>
+</div>
+{% endif %}
+
+<dialog class="gv-dialog" id="share-dialog" aria-labelledby="share-dialog-title">
+  <form class="gv-dialog-card" id="day-share-form" data-template-id="{{ template.id }}">
+    <h2 id="share-dialog-title" class="gv-dialog-title">Compartir rutina</h2>
+    <p class="gv-muted-sm">La otra persona recibe la misma lista de ejercicios; cada quien registra sus propios pesos.</p>
+    {% if family_users %}
+    <label class="gym-field">
+      <span>Compartir con</span>
+      <select name="to_user_id" required>
+        {% for fu in family_users %}
+        <option value="{{ fu.id }}">{{ fu.display_name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="gym-field">
+      <span>Mensaje (opcional)</span>
+      <input type="text" name="message" maxlength="500" placeholder="¡Hoy toca este día!" />
+    </label>
+    {% else %}
+    <p class="gym-empty">No hay otros usuarios de la familia registrados.</p>
+    {% endif %}
+    <p class="share-feedback" id="day-share-feedback" hidden></p>
+    <div class="gv-dialog-actions">
+      <button type="button" class="gv-btn-ghost" data-close-dialog>Cancelar</button>
+      {% if family_users %}<button type="submit" class="gym-btn-primary">Compartir</button>{% endif %}
+    </div>
+  </form>
+</dialog>
+{% endblock %}

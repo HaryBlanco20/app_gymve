@@ -28,6 +28,20 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 - Web / iPhone: `http://127.0.0.1:8000/login` (en iPhone real usa **HTTPS** — túnel o Caddy; ver docs).
 - Health: `/health`
+- Catálogo y plan de 5 días: `python scripts/seed_workouts.py` (idempotente; dueña = `GYMVE_SEED_OWNER_EMAIL` o el primer usuario).
+
+## Pantallas de entrenamiento (PWA)
+
+| Ruta | Qué hace |
+|------|----------|
+| `/app/workouts` | Días del plan con anillo de progreso + invitaciones compartidas |
+| `/app/workouts/{id}` | Día: ejercicios, tiempo estimado, **Comenzar** y **Compartir** |
+| `/app/session/{id}/exercise/{n}` | Registro de series (kg × reps o minutos), descanso con cuenta atrás, historial |
+| `/app/exercises`, `/app/exercises/{id}` | Catálogo y ficha: Info / Músculos / Historial / Progreso |
+| `/app/gym` | «Mi gym»: equipo activo (filtra rutinas) y marca/modelo de cada máquina |
+
+Cada persona solo ve sus propios registros; una rutina compartida copia la lista de ejercicios, no los pesos.
+Ilustraciones y licencias: [docs/creditos-imagenes.md](docs/creditos-imagenes.md).
 
 HTTPS local opcional: certificados en `docker/caddy/certs/` → `make dev-proxy`.
 
@@ -65,7 +79,15 @@ export ANDROID_AVD=Pixel_7_API_34
 ```text
 POST /api/v1/login   {"email","password"}  → access_token
 GET  /api/v1/me      Authorization: Bearer …
+POST /api/v1/workouts/{id}/start               → session_id, url
+POST /api/v1/sessions/{id}/sets                {"exercise_id","weight_kg","reps"} o {"exercise_id","duration_min"}
+POST /api/v1/sessions/{id}/sets/{log_id}/delete
+POST /api/v1/sessions/{id}/complete
+POST /api/v1/me/equipment                      {"enabled":["machine","cable","smith","dumbbell","cardio"]}
+POST /api/v1/machines/{id}                     {"brand","model","confirmed"}
 ```
+
+Con cookie de sesión, las peticiones POST deben ser JSON y del mismo origen (cabecera `Origin`).
 
 ## Estructura
 

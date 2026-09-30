@@ -1,4 +1,5 @@
 {% extends "app_base.html" %}
+{% from "_gym_macros.html" import ring %}
 {% block title %}Entrenamientos — GymVe{% endblock %}
 {% block content %}
 <section class="gym-greeting">
@@ -9,27 +10,15 @@
 <section class="gym-section">
   <h2 class="gym-section-title">Mis rutinas</h2>
   {% for tpl in templates %}
-  <article class="workout-day-card" data-template-id="{{ tpl.id }}">
-    <div class="workout-day-ring" style="--day-progress: 0;">
-      <svg viewBox="0 0 36 36" aria-hidden="true">
-        <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-        <path class="ring-fill" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-      </svg>
-    </div>
+  <a href="/app/workouts/{{ tpl.id }}" class="workout-day-card" data-template-id="{{ tpl.id }}">
+    {{ ring(tpl.progress, size="sm") }}
     <div class="workout-day-body">
-      <p class="workout-day-focus">{{ tpl.focus | capitalize }}</p>
+      <p class="workout-day-focus">{% if tpl.day_number %}{{ tpl.day_number }}.º día de entrenamiento{% else %}{{ tpl.focus | capitalize }}{% endif %}</p>
       <h3 class="workout-day-title">{{ tpl.title }}</h3>
-      <p class="workout-day-meta">{{ tpl.exercise_count }} ejercicios</p>
-      <ul class="exercise-preview">
-        {% for name in tpl.exercise_names[:4] %}
-        <li>{{ name }}</li>
-        {% endfor %}
-        {% if tpl.exercise_count > 4 %}
-        <li>+ {{ tpl.exercise_count - 4 }} más</li>
-        {% endif %}
-      </ul>
+      <p class="workout-day-meta">{{ tpl.exercise_count }} ejercicios{% if tpl.hidden_count %} · {{ tpl.hidden_count }} ocultos por Mi gym{% endif %}</p>
     </div>
-  </article>
+    <i class="ti ti-chevron-right workout-day-chevron"></i>
+  </a>
   {% else %}
   <div class="gym-empty">
     <p>No hay plantillas. Corre <code>python scripts/seed_workouts.py</code> tras el seed de usuarios.</p>
@@ -91,63 +80,4 @@
     {% endfor %}
   </div>
 </section>
-{% endblock %}
-
-{% block scripts %}
-<script>
-(function () {
-  const feedback = document.getElementById("share-feedback");
-  const form = document.getElementById("share-form");
-  if (form) {
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const fd = new FormData(form);
-      const body = {
-        template_id: Number(fd.get("template_id")),
-        to_user_id: Number(fd.get("to_user_id")),
-        message: String(fd.get("message") || ""),
-      };
-      feedback.hidden = false;
-      feedback.textContent = "Enviando…";
-      feedback.className = "share-feedback";
-      try {
-        const res = await fetch("/api/v1/workouts/share", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(body),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          feedback.textContent = data.detail || "No se pudo compartir.";
-          feedback.classList.add("error");
-          return;
-        }
-        feedback.textContent = "Rutina compartida. La otra persona puede aceptarla abajo.";
-        feedback.classList.add("ok");
-        setTimeout(() => window.location.reload(), 800);
-      } catch {
-        feedback.textContent = "Error de red.";
-        feedback.classList.add("error");
-      }
-    });
-  }
-  document.querySelectorAll(".accept-share-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-id");
-      btn.disabled = true;
-      try {
-        const res = await fetch(`/api/v1/workouts/shared/${id}/accept`, {
-          method: "POST",
-          credentials: "include",
-        });
-        if (res.ok) window.location.reload();
-        else btn.disabled = false;
-      } catch {
-        btn.disabled = false;
-      }
-    });
-  });
-})();
-</script>
 {% endblock %}

@@ -12,7 +12,15 @@ from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.api_routes import router as api_router
-from app.app_views import build_dashboard_context, build_workouts_context
+from app.app_views import (
+    build_catalog_context,
+    build_dashboard_context,
+    build_day_context,
+    build_exercise_info_context,
+    build_gym_context,
+    build_session_exercise_context,
+    build_workouts_context,
+)
 from app.auth import authenticate_user
 from app.config import (
     get_app_host,
@@ -24,10 +32,12 @@ from app.config import (
     session_https_only,
     validate_security_config,
 )
-from app.db import Base, engine, get_db
+from app.db import engine, get_db
 from app.middleware_security import SecurityHeadersMiddleware
 from app.models import User
 from app.rate_limit import limiter, login_rate_limit
+from app.schema_upgrade import upgrade_schema
+from app.training_service import load_owned_session
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -36,7 +46,7 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     validate_security_config()
-    Base.metadata.create_all(bind=engine)
+    upgrade_schema(engine)
     yield
 
 
@@ -153,6 +163,79 @@ async def app_workouts(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/login", status_code=303)
     ctx = build_workouts_context(db, user)
     return templates.TemplateResponse(request, "workouts.html", ctx)
+
+
+def _login_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/login", status_code=303)
+
+
+def _safe_back(value: str | None, default: str) -> str:
+    if value and value.startswith("/app/") and "//" not in value and "\\" not in value:
+        return value
+    return default
+
+
+@app.get("/app/workouts/{template_id}", response_class=HTMLResponse)
+async def app_workout_day(template_id: int, request: Request, db: Session = Depends(get_db)):
+    user = _require_user(request, db)
+    if not user:
+        return _login_redirect()
+    ctx = build_day_context(db, user, template_id)
+    if ctx is None:
+        return RedirectResponse(url="/app/workouts", status_code=303)
+    return templates.TemplateResponse(request, "workout_day.html", ctx)
+
+
+@app.get("/app/session/{session_id}/exercise/{n}", response_class=HTMLResponse)
+async def app_session_exercise(
+    session_id: int, n: int, request: Request, db: Session = Depends(get_db)
+):
+    user = _require_user(request, db)
+    if not user:
+        return _login_redirect()
+    session = load_owned_session(db, user.id, session_id)
+    if session is None:
+        return RedirectResponse(url="/app/workouts", status_code=303)
+    ctx = build_session_exercise_context(db, user, session, n)
+    if ctx is None:
+        return RedirectResponse(url=f"/app/workouts/{session.template_id}", status_code=303)
+    return templates.TemplateResponse(request, "session_exercise.html", ctx)
+
+
+@app.get("/app/exercises", response_class=HTMLResponse)
+async def app_exercises(request: Request, todo: int = 0, db: Session = Depends(get_db)):
+    user = _require_user(request, db)
+    if not user:
+        return _login_redirect()
+    ctx = build_catalog_context(db, user, show_all=bool(todo))
+    return templates.TemplateResponse(request, "exercises.html", ctx)
+
+
+@app.get("/app/exercises/{exercise_id}", response_class=HTMLResponse)
+async def app_exercise_info(
+    exercise_id: int,
+    request: Request,
+    tab: str = "info",
+    back: str | None = None,
+    db: Session = Depends(get_db),
+):
+    user = _require_user(request, db)
+    if not user:
+        return _login_redirect()
+    ctx = build_exercise_info_context(
+        db, user, exercise_id, tab, _safe_back(back, "/app/exercises")
+    )
+    if ctx is None:
+        return RedirectResponse(url="/app/exercises", status_code=303)
+    return templates.TemplateResponse(request, "exercise_info.html", ctx)
+
+
+@app.get("/app/gym", response_class=HTMLResponse)
+async def app_gym(request: Request, db: Session = Depends(get_db)):
+    user = _require_user(request, db)
+    if not user:
+        return _login_redirect()
+    return templates.TemplateResponse(request, "gym.html", build_gym_context(db, user))
 
 
 @app.post("/logout")

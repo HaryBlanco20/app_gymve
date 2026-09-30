@@ -1,0 +1,49 @@
+{% extends "app_base.html" %}
+{% block title %}Mi gym — GymVe{% endblock %}
+{% block content %}
+<section class="gym-greeting">
+  <p class="gym-kicker">Fitness 24 Seven · San José de Bavaria</p>
+  <h1 class="gym-page-title">Mi gym</h1>
+  <p class="gym-lead">Activa el equipo que usas. Las rutinas y el catálogo solo muestran ejercicios con equipo activo.</p>
+</section>
+
+<form class="gv-card" id="equipment-form">
+  {% for eq in equipment %}
+  <label class="gv-toggle">
+    <span class="gv-toggle-label"><i class="ti {{ eq.icon }}"></i> {{ eq.label }}</span>
+    <input type="checkbox" name="enabled" value="{{ eq.key }}"{% if eq.enabled %} checked{% endif %} />
+    <span class="gv-switch" aria-hidden="true"></span>
+  </label>
+  {% endfor %}
+  <p class="share-feedback" id="equipment-feedback" hidden></p>
+</form>
+
+<section class="gym-section">
+  <h2 class="gym-section-title">Máquinas de la sede</h2>
+  <p class="gv-muted-sm gv-mb">La marca es una suposición («probable») hasta que la confirmes con la placa de la máquina.</p>
+  {% for eq in equipment %}{% if eq.machines %}
+  <h3 class="gv-subtitle">{{ eq.label }}</h3>
+  <ul class="gv-machine-list">
+    {% for m in eq.machines %}
+    <li class="gv-machine" data-machine-id="{{ m.id }}">
+      <div class="gv-machine-head">
+        <span class="gv-exercise-name">{{ m.name }}</span>
+        <span class="badge badge-{{ 'accepted' if m.brand_status == 'confirmed' else 'pending' }}">{{ status_labels.get(m.brand_status, m.brand_status) }}</span>
+      </div>
+      <p class="gv-muted-sm">{{ m.brand or 'Marca sin definir' }}{% if m.model %} · {{ m.model }}{% endif %}</p>
+      <details class="gv-machine-edit">
+        <summary>Editar marca / modelo</summary>
+        <form class="gv-machine-form" data-machine-form="{{ m.id }}">
+          <label class="gym-field"><span>Marca</span><input type="text" name="brand" maxlength="80" value="{{ m.brand or '' }}" /></label>
+          <label class="gym-field"><span>Modelo (opcional)</span><input type="text" name="model" maxlength="120" value="{{ m.model or '' }}" placeholder="p. ej. código de la placa" /></label>
+          <label class="gv-check"><input type="checkbox" name="confirmed"{% if m.brand_status == 'confirmed' %} checked{% endif %} /> Confirmada en la sede</label>
+          <button type="submit" class="gym-btn-primary">Guardar</button>
+          <p class="share-feedback" hidden></p>
+        </form>
+      </details>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}{% endfor %}
+</section>
+{% endblock %}

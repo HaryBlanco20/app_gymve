@@ -9,6 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="GymVe" />
   <link rel="manifest" href="/static/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/static/icon-192.png" />
+  <link rel="icon" href="/static/icon-192.png" />
   <title>{% block title %}GymVe{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -48,13 +49,22 @@
         <i class="ti ti-barbell"></i>
         <span>Entrenamientos</span>
       </a>
+      <a href="/app/exercises" class="gym-nav-item{% if active_tab == 'exercises' %} active{% endif %}">
+        <i class="ti ti-list-details"></i>
+        <span>Ejercicios</span>
+      </a>
       <a href="/app/workouts#compartidos" class="gym-nav-item{% if active_tab == 'shared' %} active{% endif %}">
         <i class="ti ti-share"></i>
         <span>Compartidos</span>
       </a>
+      <a href="/app/gym" class="gym-nav-item{% if active_tab == 'gym' %} active{% endif %}">
+        <i class="ti ti-building"></i>
+        <span>Mi gym</span>
+      </a>
     </nav>
   </div>
   <script src="/static/app.js" defer></script>
+  <script src="/static/app-gym.js?v=20260930" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

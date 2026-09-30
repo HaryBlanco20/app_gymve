@@ -1,19 +1,33 @@
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import authenticate_user
 from app.config import password_meets_policy
 from app.db import get_db
-from app.models import SharedWorkout, SharedWorkoutStatus, User, WorkoutTemplate
+from app.models import (
+    Machine,
+    SharedWorkout,
+    SharedWorkoutStatus,
+    User,
+    UserExerciseLog,
+    WorkoutTemplate,
+)
 from app.rate_limit import limiter, login_rate_limit
 from app.schemas import (
+    EquipmentPrefsRequest,
     LoginRequest,
     LoginResponse,
+    LogSetRequest,
+    LogSetResponse,
+    MachineUpdateRequest,
     SharedStatusSchema,
     SharedWorkoutItem,
     SharedWorkoutListResponse,
     ShareWorkoutRequest,
     ShareWorkoutResponse,
+    StartSessionResponse,
     UserProfile,
 )
 from app.security import (
@@ -21,6 +35,16 @@ from app.security import (
     get_current_api_user,
     get_current_user_hybrid,
     get_user_by_email,
+)
+from app.training_service import (
+    enabled_equipment,
+    is_cardio,
+    load_owned_session,
+    load_owned_template,
+    next_set_number,
+    set_enabled_equipment,
+    start_or_resume_session,
+    visible_items,
 )
 from app.workout_service import accept_shared_workout, user_owns_template
 
@@ -176,3 +200,148 @@ def accept_share(
         to_user_id=shared.to_user_id,
         source_template_id=shared.source_template_id,
     )
+
+
+@router.post("/workouts/{template_id}/start", response_model=StartSessionResponse)
+def start_workout(
+    template_id: int,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user_hybrid),
+) -> StartSessionResponse:
+    template = load_owned_template(db, current.id, template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Rutina no encontrada.")
+    if not visible_items(template, enabled_equipment(db, current.id)):
+        raise HTTPException(
+            status_code=400,
+            detail="Ningún ejercicio coincide con el equipo activo en Mi gym.",
+        )
+    session = start_or_resume_session(db, current.id, template)
+    db.commit()
+    return StartSessionResponse(
+        session_id=session.id,
+        url=f"/app/session/{session.id}/exercise/1",
+    )
+
+
+def _owned_session_or_404(db: Session, user: User, session_id: int):
+    session = load_owned_session(db, user.id, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Sesión no encontrada.")
+    return session
+
+
+@router.post("/sessions/{session_id}/sets", response_model=LogSetResponse)
+def log_set(
+    session_id: int,
+    body: LogSetRequest,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user_hybrid),
+) -> LogSetResponse:
+    session = _owned_session_or_404(db, current, session_id)
+    template = load_owned_template(db, current.id, session.template_id)
+    item = next(
+        (i for i in (template.items if template else []) if i.exercise_id == body.exercise_id),
+        None,
+    )
+    if item is None:
+        raise HTTPException(status_code=400, detail="El ejercicio no pertenece a esta rutina.")
+    if is_cardio(item.exercise):
+        if not body.duration_min:
+            raise HTTPException(status_code=400, detail="Indica los minutos.")
+        weight, reps, minutes = 0.0, 0, body.duration_min
+    else:
+        if body.reps < 1:
+            raise HTTPException(status_code=400, detail="Indica las repeticiones.")
+        weight, reps, minutes = body.weight_kg, body.reps, None
+    log = UserExerciseLog(
+        session_id=session.id,
+        user_id=current.id,
+        exercise_id=item.exercise_id,
+        set_number=next_set_number(db, session.id, item.exercise_id),
+        weight_kg=weight,
+        reps=reps,
+        duration_min=minutes,
+    )
+    db.add(log)
+    session.completed_at = None
+    db.commit()
+    db.refresh(log)
+    return LogSetResponse(
+        id=log.id,
+        set_number=log.set_number,
+        weight_kg=log.weight_kg,
+        reps=log.reps,
+        duration_min=log.duration_min,
+    )
+
+
+@router.post("/sessions/{session_id}/sets/{log_id}/delete")
+def delete_set(
+    session_id: int,
+    log_id: int,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user_hybrid),
+) -> dict[str, str]:
+    session = _owned_session_or_404(db, current, session_id)
+    deleted = (
+        db.query(UserExerciseLog)
+        .filter(
+            UserExerciseLog.id == log_id,
+            UserExerciseLog.session_id == session.id,
+            UserExerciseLog.user_id == current.id,
+        )
+        .delete()
+    )
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Serie no encontrada.")
+    db.commit()
+    return {"status": "ok"}
+
+
+@router.post("/sessions/{session_id}/complete")
+def complete_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user_hybrid),
+) -> dict[str, str]:
+    session = _owned_session_or_404(db, current, session_id)
+    session.completed_at = datetime.now(UTC)
+    db.commit()
+    return {"status": "ok", "url": f"/app/workouts/{session.template_id}"}
+
+
+@router.post("/me/equipment")
+def update_equipment(
+    body: EquipmentPrefsRequest,
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user_hybrid),
+) -> dict[str, list[str]]:
+    enabled = {item.value for item in body.enabled}
+    set_enabled_equipment(db, current.id, enabled)
+    db.commit()
+    return {"enabled": sorted(enabled)}
+
+
+@router.post("/machines/{machine_id}")
+def update_machine(
+    machine_id: int,
+    body: MachineUpdateRequest,
+    db: Session = Depends(get_db),
+    _current: User = Depends(get_current_user_hybrid),
+) -> dict[str, str | None]:
+    machine = db.query(Machine).filter(Machine.id == machine_id).one_or_none()
+    if not machine:
+        raise HTTPException(status_code=404, detail="Máquina no encontrada.")
+    machine.brand = body.brand.strip() or None
+    machine.model = body.model.strip() or None
+    if not machine.brand:
+        machine.brand_status = "unknown"
+    else:
+        machine.brand_status = "confirmed" if body.confirmed else "probable"
+    db.commit()
+    return {
+        "brand": machine.brand,
+        "model": machine.model,
+        "brand_status": machine.brand_status,
+    }

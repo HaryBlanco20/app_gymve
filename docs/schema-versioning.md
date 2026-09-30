@@ -5,6 +5,10 @@ Hoy GymVe crea el esquema con **SQLAlchemy** de forma idempotente:
 - `python scripts/init_db.py` → `Base.metadata.create_all()`
 - El arranque de FastAPI también llama a `create_all` en el lifespan (solo crea lo que falta; no altera columnas existentes).
 
+- Columnas y valores de enum nuevos en tablas existentes: `app/schema_upgrade.py`
+  (`ALTER TABLE … ADD COLUMN IF NOT EXISTS`, `ALTER TYPE … ADD VALUE IF NOT EXISTS`). Lo llaman
+  `init_db.py`, `seed_workouts.py` y el arranque de FastAPI; es idempotente.
+
 ## Implicaciones
 
 - **Desarrollo familiar:** suficiente para el tamaño actual del proyecto.

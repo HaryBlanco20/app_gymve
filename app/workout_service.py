@@ -16,6 +16,7 @@ def clone_template(db: Session, source: WorkoutTemplate, new_owner_id: int) -> W
         title=source.title,
         description=source.description,
         focus=source.focus,
+        day_number=source.day_number,
     )
     db.add(clone)
     db.flush()
@@ -27,6 +28,9 @@ def clone_template(db: Session, source: WorkoutTemplate, new_owner_id: int) -> W
                 sort_order=item.sort_order,
                 default_sets=item.default_sets,
                 default_reps=item.default_reps,
+                intensity_pct=item.intensity_pct,
+                duration_min=item.duration_min,
+                rest_seconds=item.rest_seconds,
             )
         )
     db.flush()

@@ -7,15 +7,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-# Import models so metadata registers workout tables.
-import app.models  # noqa: F401
-from app.db import Base, engine
-from app.models import User  # noqa: F401 — registra tablas en Base.metadata
+from app.db import engine
+from app.schema_upgrade import upgrade_schema
 
 
 def main() -> None:
-    Base.metadata.create_all(bind=engine)
-    print("Tablas creadas o ya existentes (usuarios, ejercicios, rutinas, compartidos).")
+    upgrade_schema(engine)
+    print(
+        "Tablas creadas o actualizadas (usuarios, ejercicios, máquinas, rutinas, "
+        "compartidos, registros)."
+    )
 
 
 if __name__ == "__main__":

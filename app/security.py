@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from urllib.parse import urlparse
 
 import jwt
 from fastapi import Depends, HTTPException, Request, status
@@ -62,6 +63,24 @@ def get_current_api_user(
     return user
 
 
+SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+
+
+def ensure_same_origin(request: Request) -> None:
+    """Defensa CSRF para peticiones con cookie de sesión (además de SameSite=Lax)."""
+    if request.method in SAFE_METHODS:
+        return
+    source = request.headers.get("origin") or request.headers.get("referer")
+    if not source:
+        return
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host", "")
+    if urlparse(source).netloc != host.split(",")[0].strip():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Origen no permitido.",
+        )
+
+
 def get_current_user_hybrid(
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
@@ -71,6 +90,7 @@ def get_current_user_hybrid(
     if session_email:
         user = get_user_by_email(db, str(session_email))
         if user:
+            ensure_same_origin(request)
             return user
     if credentials and credentials.scheme.lower() == "bearer":
         email = decode_access_token(credentials.credentials)

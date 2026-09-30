@@ -51,6 +51,43 @@ def accept_shared_workout(db: Session, shared: SharedWorkout) -> WorkoutTemplate
     return clone
 
 
+def received_shares(db: Session, user_id: int) -> list[SharedWorkout]:
+    """Invitaciones pendientes y aceptadas para la usuaria; repara aceptadas sin copia."""
+    rows = (
+        db.query(SharedWorkout)
+        .options(
+            joinedload(SharedWorkout.from_user),
+            joinedload(SharedWorkout.source_template).joinedload(WorkoutTemplate.items),
+        )
+        .filter(
+            SharedWorkout.to_user_id == user_id,
+            SharedWorkout.status.in_(
+                [SharedWorkoutStatus.pending, SharedWorkoutStatus.accepted]
+            ),
+        )
+        .order_by(SharedWorkout.created_at.desc())
+        .all()
+    )
+    repaired = False
+    for row in rows:
+        if row.status == SharedWorkoutStatus.accepted and row.cloned_template_id is None:
+            row.cloned_template_id = clone_template(db, row.source_template, user_id).id
+            repaired = True
+    if repaired:
+        db.commit()
+    return rows
+
+
+def shared_clone_ids(db: Session, user_id: int) -> set[int]:
+    return {
+        row[0]
+        for row in db.query(SharedWorkout.cloned_template_id).filter(
+            SharedWorkout.to_user_id == user_id,
+            SharedWorkout.cloned_template_id.is_not(None),
+        )
+    }
+
+
 def user_owns_template(db: Session, user_id: int, template_id: int) -> bool:
     tpl = (
         db.query(WorkoutTemplate)

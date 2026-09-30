@@ -105,6 +105,31 @@ def visible_items(
     ]
 
 
+@dataclass
+class RoutineItems:
+    items: list[WorkoutTemplateExercise]
+    hidden_count: int
+    # Rutina compartida cuyo equipo no está en Mi gym: se muestra completa en vez de vacía.
+    showing_all: bool = False
+
+
+def routine_items(template: WorkoutTemplate, enabled: set[str], shared: bool) -> RoutineItems:
+    items = visible_items(template, enabled)
+    if items or not shared:
+        return RoutineItems(items, len(template.items) - len(items))
+    everything = [i for i in sorted(template.items, key=lambda i: i.sort_order) if i.exercise]
+    return RoutineItems(everything, 0, showing_all=bool(everything))
+
+
+def shared_for_clone(db: Session, template_id: int) -> SharedWorkout | None:
+    return (
+        db.query(SharedWorkout)
+        .options(joinedload(SharedWorkout.from_user))
+        .filter(SharedWorkout.cloned_template_id == template_id)
+        .one_or_none()
+    )
+
+
 def prescription(item: WorkoutTemplateExercise) -> str:
     if is_cardio(item.exercise):
         return f"{item.duration_min or 5} min"
@@ -181,11 +206,7 @@ def start_or_resume_session(db: Session, user_id: int, template: WorkoutTemplate
         cutoff
     ):
         return current
-    shared = (
-        db.query(SharedWorkout)
-        .filter(SharedWorkout.cloned_template_id == template.id)
-        .one_or_none()
-    )
+    shared = shared_for_clone(db, template.id)
     session = WorkoutSession(
         user_id=user_id,
         template_id=template.id,

@@ -33,15 +33,29 @@
 <section class="gym-section">
   <h2 class="gym-section-title">Próximo entrenamiento</h2>
   {% if featured_template %}
-  <a href="/app/workouts/{{ featured_template.id }}" class="workout-day-card featured">
+  <a href="{{ featured_url }}" class="workout-day-card featured">
     {{ ring(day_progress, size="sm") }}
     <div class="workout-day-body">
-      <p class="workout-day-focus">{{ featured_template.focus | capitalize }}</p>
+      <p class="workout-day-focus">{% if featured_shared_from %}Compartida por {{ featured_shared_from }}{% else %}{{ featured_template.focus | capitalize }}{% endif %}</p>
       <h3 class="workout-day-title">{{ featured_template.title }}</h3>
       <p class="workout-day-meta">{{ featured_template.exercise_count }} ejercicios</p>
     </div>
     <i class="ti ti-chevron-right workout-day-chevron"></i>
   </a>
+  {% for sr in shared_next %}
+  <a href="/app/workouts/{{ sr.template_id }}" class="workout-day-card shared-routine-card">
+    {{ ring(sr.progress, size="sm") }}
+    <div class="workout-day-body">
+      <p class="workout-day-focus"><i class="ti ti-users"></i> Compartida por {{ sr.from_name }}</p>
+      <h3 class="workout-day-title">{{ sr.title }}</h3>
+      <p class="workout-day-meta">{{ sr.exercise_count }} ejercicios</p>
+    </div>
+    <i class="ti ti-chevron-right workout-day-chevron"></i>
+  </a>
+  {% endfor %}
+  {% if pending_shares %}
+  <a href="/app/workouts#rutinas-compartidas" class="gv-link">{{ pending_shares }} rutina{{ 's' if pending_shares > 1 }} compartida{{ 's' if pending_shares > 1 }} por aceptar <i class="ti ti-chevron-right"></i></a>
+  {% endif %}
   {% else %}
   <div class="gym-empty">
     <p>Aún no tienes rutinas. Ejecuta el seed o crea una desde Entrenamientos.</p>

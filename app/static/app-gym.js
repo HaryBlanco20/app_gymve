@@ -47,12 +47,15 @@
 
   document.querySelectorAll(".accept-share-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
+      const fb = btn.parentElement.querySelector(".share-feedback");
       btn.disabled = true;
+      feedback(fb, "Aceptando…");
       try {
-        await postJSON(`/api/v1/workouts/shared/${btn.dataset.id}/accept`);
-        window.location.reload();
-      } catch {
+        const data = await postJSON(`/api/v1/workouts/shared/${btn.dataset.id}/accept`);
+        window.location.href = `/app/workouts?aceptada=${data.id}#rutinas-compartidas`;
+      } catch (err) {
         btn.disabled = false;
+        feedback(fb, err.message, "error");
       }
     });
   });

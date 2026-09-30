@@ -157,11 +157,11 @@ async def app_dashboard(request: Request, db: Session = Depends(get_db)):
 
 
 @app.get("/app/workouts", response_class=HTMLResponse)
-async def app_workouts(request: Request, db: Session = Depends(get_db)):
+async def app_workouts(request: Request, aceptada: int = 0, db: Session = Depends(get_db)):
     user = _require_user(request, db)
     if not user:
         return RedirectResponse(url="/login", status_code=303)
-    ctx = build_workouts_context(db, user)
+    ctx = build_workouts_context(db, user, just_accepted=aceptada)
     return templates.TemplateResponse(request, "workouts.html", ctx)
 
 

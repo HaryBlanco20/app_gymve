@@ -42,9 +42,10 @@ from app.training_service import (
     load_owned_session,
     load_owned_template,
     next_set_number,
+    routine_items,
     set_enabled_equipment,
+    shared_for_clone,
     start_or_resume_session,
-    visible_items,
 )
 from app.workout_service import accept_shared_workout, user_owns_template
 
@@ -199,6 +200,7 @@ def accept_share(
         status=SharedStatusSchema(shared.status.value),
         to_user_id=shared.to_user_id,
         source_template_id=shared.source_template_id,
+        cloned_template_id=shared.cloned_template_id,
     )
 
 
@@ -211,7 +213,8 @@ def start_workout(
     template = load_owned_template(db, current.id, template_id)
     if not template:
         raise HTTPException(status_code=404, detail="Rutina no encontrada.")
-    if not visible_items(template, enabled_equipment(db, current.id)):
+    shared = shared_for_clone(db, template.id) is not None
+    if not routine_items(template, enabled_equipment(db, current.id), shared).items:
         raise HTTPException(
             status_code=400,
             detail="Ningún ejercicio coincide con el equipo activo en Mi gym.",

@@ -1348,3 +1348,31 @@ p.gv-set-empty {
 .gv-ring-zero .ring-fill {
   stroke: transparent;
 }
+
+/* rutinas compartidas */
+.shared-routine-card.is-pending {
+  align-items: flex-start;
+  border-color: rgba(250, 199, 117, 0.35);
+}
+
+.shared-routine-card .workout-day-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.shared-routine-card .gym-btn-primary {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.shared-routine-card .share-feedback {
+  margin-top: 6px;
+}
+
+.shared-open-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 12px;
+}

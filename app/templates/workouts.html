@@ -21,14 +21,54 @@
   </a>
   {% else %}
   <div class="gym-empty">
+    {% if shared_routines %}
+    <p>Aún no tienes rutinas propias. Abajo están las que te compartieron.</p>
+    {% else %}
     <p>No hay plantillas. Corre <code>python scripts/seed_workouts.py</code> tras el seed de usuarios.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</section>
+
+<section class="gym-section" id="rutinas-compartidas">
+  <h2 class="gym-section-title">Rutinas compartidas</h2>
+  {% if just_accepted %}
+  <p class="share-feedback ok gv-mb">Aceptaste «{{ just_accepted.title }}». Ya está en tu lista; tus registros son solo tuyos.</p>
+  {% endif %}
+  {% for sr in shared_routines %}
+  {% if sr.pending %}
+  <div class="workout-day-card shared-routine-card is-pending" data-shared-id="{{ sr.share_id }}">
+    {{ ring(0, size="sm") }}
+    <div class="workout-day-body">
+      <p class="workout-day-focus">Compartida por {{ sr.from_name }}</p>
+      <h3 class="workout-day-title">{{ sr.title }}</h3>
+      <p class="workout-day-meta">{{ sr.exercise_count }} ejercicios · pendiente de aceptar{% if sr.hidden_count %} · {{ sr.hidden_count }} ocultos por Mi gym{% endif %}</p>
+      {% if sr.message %}<p class="shared-msg">{{ sr.message }}</p>{% endif %}
+      <button type="button" class="gym-btn-primary accept-share-btn" data-id="{{ sr.share_id }}">Aceptar</button>
+      <p class="share-feedback" hidden></p>
+    </div>
+  </div>
+  {% else %}
+  <a href="/app/workouts/{{ sr.template_id }}" class="workout-day-card shared-routine-card{% if just_accepted and just_accepted.share_id == sr.share_id %} featured{% endif %}" data-template-id="{{ sr.template_id }}">
+    {{ ring(sr.progress, size="sm") }}
+    <div class="workout-day-body">
+      <p class="workout-day-focus"><i class="ti ti-users"></i> Compartida por {{ sr.from_name }}</p>
+      <h3 class="workout-day-title">{{ sr.title }}</h3>
+      <p class="workout-day-meta">{{ sr.exercise_count }} ejercicios{% if sr.hidden_count %} · {{ sr.hidden_count }} ocultos por Mi gym{% endif %}{% if sr.showing_all %} · Mi gym no tiene este equipo, se muestran todos{% endif %}</p>
+    </div>
+    <i class="ti ti-chevron-right workout-day-chevron"></i>
+  </a>
+  {% endif %}
+  {% else %}
+  <div class="gym-empty">
+    <p>Cuando alguien de la familia te comparta una rutina, aparece aquí.</p>
   </div>
   {% endfor %}
 </section>
 
 <section class="gym-section" id="compartidos">
   <h2 class="gym-section-title">Compartidos</h2>
-  {% if family_users %}
+  {% if family_users and templates %}
   <form class="share-form" id="share-form">
     <label class="gym-field">
       <span>Compartir rutina con familia</span>
@@ -71,6 +111,9 @@
       <button type="button" class="gym-btn-primary accept-share-btn" data-id="{{ item.id }}">
         Aceptar rutina
       </button>
+      <p class="share-feedback" hidden></p>
+      {% elif item.cloned_template_id %}
+      <a href="/app/workouts/{{ item.cloned_template_id }}" class="gv-link shared-open-link">Abrir rutina <i class="ti ti-chevron-right"></i></a>
       {% endif %}
     </div>
     {% else %}

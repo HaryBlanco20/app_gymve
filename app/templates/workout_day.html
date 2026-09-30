@@ -20,7 +20,9 @@
   </div>
 </section>
 
-{% if hidden_count %}
+{% if showing_all %}
+<p class="gv-note"><i class="ti ti-filter"></i> Tu equipo en <a href="/app/gym">Mi gym</a> no incluye el de esta rutina compartida; se muestran todos sus ejercicios.</p>
+{% elif hidden_count %}
 <p class="gv-note"><i class="ti ti-filter"></i> {{ hidden_count }} ejercicio{{ 's' if hidden_count > 1 }} oculto{{ 's' if hidden_count > 1 }} por tu equipo en <a href="/app/gym">Mi gym</a>.</p>
 {% endif %}
 

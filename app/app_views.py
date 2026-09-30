@@ -35,10 +35,13 @@ from app.training_service import (
     prescription,
     progress_chart,
     recommended_kg,
+    routine_items,
     session_logs,
+    shared_for_clone,
     template_progress,
     visible_items,
 )
+from app.workout_service import received_shares, shared_clone_ids
 
 
 @dataclass
@@ -64,6 +67,23 @@ class SharedCardView:
     message: str
     direction_label: str
     can_accept: bool
+    cloned_template_id: int | None = None
+
+
+@dataclass
+class SharedRoutineCard:
+    share_id: int
+    template_id: int | None
+    title: str
+    focus: str
+    day_number: int | None
+    from_name: str
+    message: str
+    exercise_count: int
+    progress: int
+    hidden_count: int
+    showing_all: bool
+    pending: bool
 
 
 def _user_ctx(user: User) -> dict:
@@ -71,14 +91,18 @@ def _user_ctx(user: User) -> dict:
 
 
 def _template_cards(db: Session, user_id: int) -> list[TemplateCard]:
-    templates = (
+    """Rutinas propias; las aceptadas de otra persona van en `_shared_routine_cards`."""
+    clones = shared_clone_ids(db, user_id)
+    query = (
         db.query(WorkoutTemplate)
         .options(
             joinedload(WorkoutTemplate.items).joinedload(WorkoutTemplateExercise.exercise)
         )
         .filter(WorkoutTemplate.owner_user_id == user_id)
-        .all()
     )
+    if clones:
+        query = query.filter(WorkoutTemplate.id.not_in(clones))
+    templates = query.all()
     templates.sort(
         key=lambda t: (t.day_number is None, t.day_number or 0, -t.created_at.timestamp())
     )
@@ -102,12 +126,53 @@ def _template_cards(db: Session, user_id: int) -> list[TemplateCard]:
     return cards
 
 
+def _shared_routine_cards(db: Session, user_id: int) -> list[SharedRoutineCard]:
+    enabled = enabled_equipment(db, user_id)
+    cards: list[SharedRoutineCard] = []
+    for share in received_shares(db, user_id):
+        pending = share.status == SharedWorkoutStatus.pending
+        template = share.source_template if pending else (
+            db.query(WorkoutTemplate)
+            .options(
+                joinedload(WorkoutTemplate.items).joinedload(WorkoutTemplateExercise.exercise)
+            )
+            .filter(
+                WorkoutTemplate.id == share.cloned_template_id,
+                WorkoutTemplate.owner_user_id == user_id,
+            )
+            .one_or_none()
+        )
+        if template is None:
+            continue
+        routine = routine_items(template, enabled, shared=True)
+        progress = 0 if pending else template_progress(db, user_id, template, routine.items)[0]
+        cards.append(
+            SharedRoutineCard(
+                share_id=share.id,
+                template_id=None if pending else template.id,
+                title=template.title,
+                focus=template.focus or "general",
+                day_number=template.day_number,
+                from_name=share.from_user.display_name if share.from_user else "",
+                message=share.message,
+                exercise_count=len(routine.items),
+                progress=progress,
+                hidden_count=routine.hidden_count,
+                showing_all=routine.showing_all,
+                pending=pending,
+            )
+        )
+    cards.sort(key=lambda c: not c.pending)
+    return cards
+
+
 def _family_users(db: Session, user: User) -> list[User]:
     return db.query(User).filter(User.id != user.id).order_by(User.display_name.asc()).all()
 
 
-def build_workouts_context(db: Session, user: User) -> dict:
+def build_workouts_context(db: Session, user: User, just_accepted: int = 0) -> dict:
     templates = _template_cards(db, user.id)
+    shared_routines = _shared_routine_cards(db, user.id)
     shared_rows = (
         db.query(SharedWorkout)
         .options(
@@ -143,11 +208,19 @@ def build_workouts_context(db: Session, user: User) -> dict:
                 can_accept=(
                     row.to_user_id == user.id and row.status == SharedWorkoutStatus.pending
                 ),
+                cloned_template_id=(
+                    row.cloned_template_id if row.to_user_id == user.id else None
+                ),
             )
         )
+    accepted_card = next(
+        (c for c in shared_routines if c.share_id == just_accepted and not c.pending), None
+    )
     return {
         "user": _user_ctx(user),
         "templates": templates,
+        "shared_routines": shared_routines,
+        "just_accepted": accepted_card,
         "shared_items": shared_items,
         "family_users": _family_users(db, user),
         "active_tab": "workouts",
@@ -156,15 +229,15 @@ def build_workouts_context(db: Session, user: User) -> dict:
 
 def build_dashboard_context(db: Session, user: User) -> dict:
     templates = _template_cards(db, user.id)
+    shared_cards = _shared_routine_cards(db, user.id)
+    accepted = [c for c in shared_cards if not c.pending]
     featured = next((t for t in templates if t.progress < 100), templates[0] if templates else None)
-    pending = (
-        db.query(SharedWorkout)
-        .filter(
-            SharedWorkout.to_user_id == user.id,
-            SharedWorkout.status == SharedWorkoutStatus.pending,
-        )
-        .count()
-    )
+    if featured is None and accepted:
+        featured = next((c for c in accepted if c.progress < 100), accepted[0])
+        featured_url = f"/app/workouts/{featured.template_id}"
+    else:
+        featured_url = f"/app/workouts/{featured.id}" if featured else ""
+    pending = sum(1 for c in shared_cards if c.pending)
     week_days = [t for t in templates if t.day_number]
     week_progress = (
         round(sum(t.progress for t in week_days) / len(week_days)) if week_days else 0
@@ -173,7 +246,10 @@ def build_dashboard_context(db: Session, user: User) -> dict:
     return {
         "user": _user_ctx(user),
         "featured_template": featured,
-        "templates_count": len(templates),
+        "featured_url": featured_url,
+        "featured_shared_from": getattr(featured, "from_name", ""),
+        "shared_next": [c for c in accepted if c is not featured],
+        "templates_count": len(templates) + len(accepted),
         "pending_shares": pending,
         "week_progress": week_progress,
         "day_progress": featured.progress if featured else 0,
@@ -191,8 +267,9 @@ def build_day_context(db: Session, user: User, template_id: int) -> dict | None:
     template = load_owned_template(db, user.id, template_id)
     if template is None:
         return None
-    enabled = enabled_equipment(db, user.id)
-    items = visible_items(template, enabled)
+    shared_from = shared_for_clone(db, template.id)
+    routine = routine_items(template, enabled_equipment(db, user.id), shared_from is not None)
+    items = routine.items
     progress, session = template_progress(db, user.id, template, items)
     logs = session_logs(db, session.id, user.id) if session else []
     rows = []
@@ -209,18 +286,13 @@ def build_day_context(db: Session, user: User, template_id: int) -> dict | None:
                 "planned": planned_units(item),
             }
         )
-    shared_from = (
-        db.query(SharedWorkout)
-        .options(joinedload(SharedWorkout.from_user))
-        .filter(SharedWorkout.cloned_template_id == template.id)
-        .one_or_none()
-    )
     session_open = bool(session and session.completed_at is None and 0 < progress)
     return {
         "user": _user_ctx(user),
         "template": template,
         "rows": rows,
-        "hidden_count": len(template.items) - len(items),
+        "hidden_count": routine.hidden_count,
+        "showing_all": routine.showing_all,
         "progress": progress,
         "estimated": format_duration(estimated_minutes(items)),
         "session_open": session_open,
@@ -236,7 +308,8 @@ def build_session_exercise_context(db: Session, user: User, session, n: int) -> 
     template = load_owned_template(db, user.id, session.template_id)
     if template is None:
         return None
-    items = visible_items(template, enabled_equipment(db, user.id))
+    shared = shared_for_clone(db, template.id) is not None
+    items = routine_items(template, enabled_equipment(db, user.id), shared).items
     if not items or n < 1 or n > len(items):
         return None
     item = items[n - 1]

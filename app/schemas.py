@@ -96,3 +96,4 @@ class ShareWorkoutResponse(BaseModel):
     status: SharedStatusSchema
     to_user_id: int
     source_template_id: int
+    cloned_template_id: int | None = None
